@@ -15,7 +15,8 @@ import {
   Layers,
   ArrowRightLeft,
   Settings,
-  Edit3
+  Edit3,
+  Coins
 } from 'lucide-react';
 
 export const Navbar = ({ activeTab, setActiveTab, onOpenArthAI }) => {
@@ -35,6 +36,7 @@ export const Navbar = ({ activeTab, setActiveTab, onOpenArthAI }) => {
 
   const navItems = [
     { id: 'dashboard', label: 'Portfolio & Wealth', icon: TrendingUp },
+    { id: 'markets', label: 'Markets & Assets', icon: Coins },
     { id: 'risk', label: 'Risk Profiler', icon: ShieldCheck },
     { id: 'goals', label: 'Goal SIP Simulator', icon: Target },
     { id: 'literacy', label: 'Hype vs Reality', icon: Flame },
@@ -84,7 +86,7 @@ export const Navbar = ({ activeTab, setActiveTab, onOpenArthAI }) => {
                         onOpenArthAI();
                       }
                     }}
-                    className={`flex items-center gap-2 px-3.5 py-2 rounded-lg text-sm font-medium transition-all ${
+                    className={`flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-medium transition-all ${
                       isActive
                         ? 'bg-brand-500/15 text-brand-400 border border-brand-500/30 shadow-sm'
                         : item.highlight

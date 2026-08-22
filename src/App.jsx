@@ -7,6 +7,7 @@ import { OnboardingWizard } from './components/auth/OnboardingWizard';
 import { EditProfileModal } from './components/profile/EditProfileModal';
 import { FuturisticLoginHero } from './components/auth/FuturisticLoginHero';
 import { PortfolioDashboard } from './components/dashboard/PortfolioDashboard';
+import { MarketExplorer } from './components/market/MarketExplorer';
 import { RiskProfiler } from './components/risk/RiskProfiler';
 import { GoalPlanner } from './components/goals/GoalPlanner';
 import { MythBusterHub } from './components/literacy/MythBusterHub';
@@ -15,7 +16,7 @@ import { Footer } from './components/layout/Footer';
 
 const MainContent = () => {
   const { currentUser } = useAuth();
-  const [activeTab, setActiveTab] = useState('dashboard'); // 'dashboard' | 'risk' | 'goals' | 'literacy' | 'advisor'
+  const [activeTab, setActiveTab] = useState('dashboard'); // 'dashboard' | 'markets' | 'risk' | 'goals' | 'literacy' | 'advisor'
   const [isArthAIOpen, setIsArthAIOpen] = useState(false);
 
   const handleOpenArthAI = () => {
@@ -35,7 +36,7 @@ const MainContent = () => {
       {/* Main Page Area */}
       <main className="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 pt-6">
         
-        {/* If user is NOT logged in: Show 3D-styled futuristic landing & login portal */}
+        {/* If user is NOT logged in: Show 3D-styled moving animated landing & login portal */}
         {!currentUser ? (
           <FuturisticLoginHero />
         ) : (
@@ -45,6 +46,12 @@ const MainContent = () => {
               <PortfolioDashboard
                 onOpenRiskQuiz={() => setActiveTab('risk')}
                 onOpenGoals={() => setActiveTab('goals')}
+                onOpenArthAI={handleOpenArthAI}
+              />
+            )}
+
+            {activeTab === 'markets' && (
+              <MarketExplorer
                 onOpenArthAI={handleOpenArthAI}
               />
             )}
@@ -77,11 +84,7 @@ const MainContent = () => {
                     Launch Full ArthAI Chat Session
                   </button>
                 </div>
-                <PortfolioDashboard
-                  onOpenRiskQuiz={() => setActiveTab('risk')}
-                  onOpenGoals={() => setActiveTab('goals')}
-                  onOpenArthAI={handleOpenArthAI}
-                />
+                <MarketExplorer onOpenArthAI={handleOpenArthAI} />
               </div>
             )}
           </>
