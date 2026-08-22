@@ -13,12 +13,14 @@ export const AuthProvider = ({ children }) => {
         console.error(e);
       }
     }
-    // Default to Aarav (Student persona) for instant interactive experience
+    // Default to Aarav (Student persona) for instant live demonstration
     return MOCK_PERSONAS[0];
   });
 
   const [authModalOpen, setAuthModalOpen] = useState(false);
   const [authMode, setAuthMode] = useState('login'); // 'login' | 'register' | 'persona'
+  const [onboardingOpen, setOnboardingOpen] = useState(false);
+  const [editProfileOpen, setEditProfileOpen] = useState(false);
 
   useEffect(() => {
     if (currentUser) {
@@ -30,7 +32,6 @@ export const AuthProvider = ({ children }) => {
 
   // Login action
   const login = (email, password) => {
-    // Check if matching any mock persona
     const found = MOCK_PERSONAS.find(p => p.email.toLowerCase() === email.toLowerCase());
     if (found) {
       setCurrentUser(found);
@@ -38,23 +39,30 @@ export const AuthProvider = ({ children }) => {
       return { success: true, user: found };
     }
 
-    // Generic login simulation
+    // Custom user login
     const newUser = {
       id: `user-${Date.now()}`,
       name: email.split('@')[0].toUpperCase(),
       email,
-      avatar: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&q=80&w=200',
+      avatar: `https://api.dicebear.com/7.x/bottts/svg?seed=${email}`,
       title: 'Individual Investor',
-      age: 26,
-      city: 'Mumbai',
-      monthlyIncome: 65000,
+      age: 24,
+      city: 'Bengaluru',
+      occupation: 'Early Career Professional',
+      monthlyIncome: 50000,
+      salary: 50000,
+      scholarship: 0,
+      internStipend: 0,
+      annualIncome: 600000,
+      savings: 40000,
+      interests: ['Mutual Funds (SIP)', 'Tax Saving (80C)', 'Travel Budgeting'],
       riskProfile: {
-        category: 'Moderate',
+        category: 'Moderate Growth',
         score: 65,
         description: 'Balanced growth seeker with moderate risk tolerance.'
       },
       netWorth: 450000,
-      monthlySIPTotal: 12000,
+      monthlySIPTotal: 10000,
       assets: {
         equity: 250000,
         debt: 120000,
@@ -63,17 +71,15 @@ export const AuthProvider = ({ children }) => {
         crypto: 0,
       },
       investments: [
-        { id: '1', name: 'Nifty 50 Index Fund', type: 'Mutual Fund (SIP)', amount: 150000, monthlySIP: 6000, returnPct: 14.2, platform: 'Zerodha' },
-        { id: '2', name: 'Flexi Cap Growth Fund', type: 'Mutual Fund (SIP)', amount: 100000, monthlySIP: 6000, returnPct: 16.5, platform: 'Groww' },
-        { id: '3', name: 'Bank Fixed Deposit', type: 'Debt', amount: 120000, monthlySIP: 0, returnPct: 7.0, platform: 'HDFC' },
-        { id: '4', name: 'Digital Gold', type: 'Gold', amount: 40000, monthlySIP: 0, returnPct: 11.0, platform: 'Paytm Money' },
+        { id: '1', name: 'Nifty 50 Index Fund Direct', type: 'Mutual Fund (SIP)', amount: 150000, monthlySIP: 5000, returnPct: 14.2, platform: 'Zerodha' },
+        { id: '2', name: 'Flexi Cap Growth Fund', type: 'Mutual Fund (SIP)', amount: 100000, monthlySIP: 5000, returnPct: 16.5, platform: 'Groww' },
+        { id: '3', name: 'Bank Fixed Deposit', type: 'Debt', amount: 120000, monthlySIP: 0, returnPct: 7.0, platform: 'HDFC Bank' },
+        { id: '4', name: 'Digital Gold (SGB/ETF)', type: 'Gold', amount: 40000, monthlySIP: 0, returnPct: 11.0, platform: 'PhonePe' },
       ],
       goals: [
-        { id: 'g1', title: 'Emergency Cushion', targetAmount: 200000, currentAmount: 120000, targetDate: '2027-01-01', monthlySIP: 5000, category: 'Security' }
+        { id: 'g1', title: 'Emergency Buffer', targetAmount: 200000, currentAmount: 120000, targetDate: '2027-01-01', monthlySIP: 5000, category: 'Security' }
       ],
-      insights: [
-        '✅ Great foundation! Your asset allocation is well balanced across equity and debt.'
-      ]
+      isOnboarded: true
     };
 
     setCurrentUser(newUser);
@@ -81,17 +87,24 @@ export const AuthProvider = ({ children }) => {
     return { success: true, user: newUser };
   };
 
-  // Register action
-  const register = (name, email, password, monthlyIncome = 30000) => {
+  // Register action -> Triggers Onboarding
+  const register = (name, email, password, baseIncome = 35000) => {
     const newUser = {
       id: `user-${Date.now()}`,
       name,
       email,
       avatar: `https://api.dicebear.com/7.x/bottts/svg?seed=${name}`,
       title: 'New Wealth Creator',
-      age: 24,
-      city: 'Delhi NCR',
-      monthlyIncome: Number(monthlyIncome),
+      age: 22,
+      city: 'Bengaluru',
+      occupation: 'Student / Young Earner',
+      monthlyIncome: Number(baseIncome),
+      salary: Number(baseIncome),
+      scholarship: 0,
+      internStipend: 0,
+      annualIncome: Number(baseIncome) * 12,
+      savings: 15000,
+      interests: ['Mutual Funds (SIP)', 'Budgeting (50-30-20)'],
       riskProfile: {
         category: 'Getting Started',
         score: 50,
@@ -107,28 +120,39 @@ export const AuthProvider = ({ children }) => {
         crypto: 0,
       },
       investments: [
-        { id: '1', name: 'Nifty 50 Index Fund Direct', type: 'Mutual Fund (SIP)', amount: 8000, monthlySIP: 2000, returnPct: 12.8, platform: 'Groww' }
+        { id: '1', name: 'Nifty 50 Index Fund Direct', type: 'Mutual Fund (SIP)', amount: 8000, monthlySIP: 2000, returnPct: 13.0, platform: 'Groww' }
       ],
       goals: [
         { id: 'g1', title: 'First ₹1 Lakh Milestone', targetAmount: 100000, currentAmount: 15000, targetDate: '2027-06-30', monthlySIP: 2000, category: 'Milestone' }
       ],
-      insights: [
-        '🎉 Welcome to ArthSaathi! Take the 2-minute Risk Profiler to unlock personalized recommendations.'
-      ]
+      isOnboarded: false
     };
 
     setCurrentUser(newUser);
     setAuthModalOpen(false);
+    setOnboardingOpen(true); // Launch step-by-step financial onboarding
     return { success: true, user: newUser };
   };
 
-  // Switch to one of the 3 predefined mock personas for instant evaluation
+  // Switch persona
   const switchPersona = (personaId) => {
     const persona = MOCK_PERSONAS.find(p => p.id === personaId);
     if (persona) {
-      setCurrentUser(persona);
+      const enrichedPersona = {
+        ...persona,
+        salary: persona.monthlyIncome,
+        scholarship: persona.id.includes('student') ? 5000 : 0,
+        internStipend: persona.id.includes('student') ? 13000 : 0,
+        annualIncome: persona.monthlyIncome * 12,
+        savings: persona.assets.cash || 20000,
+        interests: persona.id.includes('student') 
+          ? ['Mutual Funds (SIP)', 'Emergency Buffer', 'Gadget Savings']
+          : ['Equity Stocks', 'SGB Gold', 'Home Purchase', 'FIRE Retirement'],
+        isOnboarded: true
+      };
+      setCurrentUser(enrichedPersona);
       setAuthModalOpen(false);
-      return { success: true, persona };
+      return { success: true, persona: enrichedPersona };
     }
     return { success: false };
   };
@@ -138,14 +162,25 @@ export const AuthProvider = ({ children }) => {
     setCurrentUser(null);
   };
 
-  // Update current user data
+  // Update current user data & persist
   const updateUserProfile = (updatedFields) => {
     setCurrentUser(prev => {
       if (!prev) return prev;
-      return {
+      const merged = {
         ...prev,
         ...updatedFields
       };
+
+      // Recalculate total monthly income from salary + scholarships + intern stipend if provided
+      if (updatedFields.salary !== undefined || updatedFields.scholarship !== undefined || updatedFields.internStipend !== undefined) {
+        const salary = Number(updatedFields.salary !== undefined ? updatedFields.salary : (prev.salary || 0));
+        const scholarship = Number(updatedFields.scholarship !== undefined ? updatedFields.scholarship : (prev.scholarship || 0));
+        const internStipend = Number(updatedFields.internStipend !== undefined ? updatedFields.internStipend : (prev.internStipend || 0));
+        merged.monthlyIncome = salary + scholarship + internStipend;
+        merged.annualIncome = merged.monthlyIncome * 12;
+      }
+
+      return merged;
     });
   };
 
@@ -162,6 +197,10 @@ export const AuthProvider = ({ children }) => {
         setAuthModalOpen,
         authMode,
         setAuthMode,
+        onboardingOpen,
+        setOnboardingOpen,
+        editProfileOpen,
+        setEditProfileOpen,
         personas: MOCK_PERSONAS
       }}
     >

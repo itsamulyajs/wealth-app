@@ -13,11 +13,23 @@ import {
   ChevronDown, 
   Sparkles,
   Layers,
-  ArrowRightLeft
+  ArrowRightLeft,
+  Settings,
+  Edit3
 } from 'lucide-react';
 
 export const Navbar = ({ activeTab, setActiveTab, onOpenArthAI }) => {
-  const { currentUser, logout, setAuthModalOpen, setAuthMode, switchPersona, personas } = useAuth();
+  const { 
+    currentUser, 
+    logout, 
+    setAuthModalOpen, 
+    setAuthMode, 
+    switchPersona, 
+    personas,
+    setEditProfileOpen,
+    setOnboardingOpen
+  } = useAuth();
+  
   const { healthEvaluation } = usePortfolio();
   const [profileDropdownOpen, setProfileDropdownOpen] = useState(false);
 
@@ -58,39 +70,41 @@ export const Navbar = ({ activeTab, setActiveTab, onOpenArthAI }) => {
           </div>
 
           {/* Desktop Navigation Links */}
-          <nav className="hidden md:flex items-center gap-1">
-            {navItems.map((item) => {
-              const Icon = item.icon;
-              const isActive = activeTab === item.id;
-              return (
-                <button
-                  key={item.id}
-                  onClick={() => {
-                    setActiveTab(item.id);
-                    if (item.id === 'advisor' && onOpenArthAI) {
-                      onOpenArthAI();
-                    }
-                  }}
-                  className={`flex items-center gap-2 px-3.5 py-2 rounded-lg text-sm font-medium transition-all ${
-                    isActive
-                      ? 'bg-brand-500/15 text-brand-400 border border-brand-500/30 shadow-sm'
-                      : item.highlight
-                      ? 'bg-indigo-600/15 text-indigo-300 hover:bg-indigo-600/25 border border-indigo-500/30'
-                      : 'text-slate-400 hover:text-slate-200 hover:bg-slate-800/50'
-                  }`}
-                >
-                  <Icon className={`w-4 h-4 ${isActive ? 'text-brand-400' : item.highlight ? 'text-indigo-400' : 'text-slate-400'}`} />
-                  <span>{item.label}</span>
-                  {item.highlight && (
-                    <span className="flex h-2 w-2 relative">
-                      <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-indigo-400 opacity-75"></span>
-                      <span className="relative inline-flex rounded-full h-2 w-2 bg-indigo-500"></span>
-                    </span>
-                  )}
-                </button>
-              );
-            })}
-          </nav>
+          {currentUser && (
+            <nav className="hidden md:flex items-center gap-1">
+              {navItems.map((item) => {
+                const Icon = item.icon;
+                const isActive = activeTab === item.id;
+                return (
+                  <button
+                    key={item.id}
+                    onClick={() => {
+                      setActiveTab(item.id);
+                      if (item.id === 'advisor' && onOpenArthAI) {
+                        onOpenArthAI();
+                      }
+                    }}
+                    className={`flex items-center gap-2 px-3.5 py-2 rounded-lg text-sm font-medium transition-all ${
+                      isActive
+                        ? 'bg-brand-500/15 text-brand-400 border border-brand-500/30 shadow-sm'
+                        : item.highlight
+                        ? 'bg-indigo-600/15 text-indigo-300 hover:bg-indigo-600/25 border border-indigo-500/30'
+                        : 'text-slate-400 hover:text-slate-200 hover:bg-slate-800/50'
+                    }`}
+                  >
+                    <Icon className={`w-4 h-4 ${isActive ? 'text-brand-400' : item.highlight ? 'text-indigo-400' : 'text-slate-400'}`} />
+                    <span>{item.label}</span>
+                    {item.highlight && (
+                      <span className="flex h-2 w-2 relative">
+                        <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-indigo-400 opacity-75"></span>
+                        <span className="relative inline-flex rounded-full h-2 w-2 bg-indigo-500"></span>
+                      </span>
+                    )}
+                  </button>
+                );
+              })}
+            </nav>
+          )}
 
           {/* Right Section: Persona Switcher & Auth */}
           <div className="flex items-center gap-3">
@@ -109,11 +123,11 @@ export const Navbar = ({ activeTab, setActiveTab, onOpenArthAI }) => {
                     <p className="font-semibold text-slate-200 leading-tight flex items-center gap-1.5">
                       {currentUser.name}
                       <span className="text-[10px] font-normal px-1.5 py-0.2 rounded bg-slate-800 text-brand-400 border border-slate-700">
-                        {currentUser.age}y
+                        {currentUser.age || 22}y
                       </span>
                     </p>
                     <p className="text-[11px] text-slate-400 font-mono">
-                      Net: {formatINR(currentUser.netWorth, true)}
+                      Net: {formatINR(currentUser.netWorth || 0, true)}
                     </p>
                   </div>
                   <ChevronDown className="w-4 h-4 text-slate-400 hidden sm:block" />
@@ -129,10 +143,28 @@ export const Navbar = ({ activeTab, setActiveTab, onOpenArthAI }) => {
                       <p className="text-xs text-slate-400">Signed in as</p>
                       <p className="text-sm font-bold text-white">{currentUser.name}</p>
                       <p className="text-xs text-slate-400">{currentUser.email}</p>
-                      <div className="mt-2 flex items-center justify-between text-xs bg-slate-950/70 p-2 rounded-lg border border-slate-800/80">
-                        <span className="text-slate-400">Portfolio Health:</span>
-                        <span className="font-semibold text-brand-400">{healthEvaluation.score}/100</span>
+                      
+                      <div className="mt-2 text-[11px] text-slate-300 bg-slate-950/70 p-2 rounded-lg border border-slate-800/80 space-y-1">
+                        <div className="flex justify-between">
+                          <span className="text-slate-400">Monthly Inflow:</span>
+                          <span className="text-brand-400 font-mono font-bold">{formatINR(currentUser.monthlyIncome || 0)}</span>
+                        </div>
+                        <div className="flex justify-between">
+                          <span className="text-slate-400">Occupation:</span>
+                          <span className="text-slate-200 truncate">{currentUser.occupation || 'Student'}</span>
+                        </div>
                       </div>
+
+                      {/* Edit Profile Anytime Button */}
+                      <button
+                        onClick={() => {
+                          setEditProfileOpen(true);
+                          setProfileDropdownOpen(false);
+                        }}
+                        className="w-full mt-2.5 py-1.5 px-3 bg-brand-500/15 hover:bg-brand-500/25 border border-brand-500/30 text-brand-300 text-xs font-bold rounded-xl flex items-center justify-center gap-1.5 transition-all"
+                      >
+                        <Edit3 className="w-3.5 h-3.5" /> Edit Financial Parameters
+                      </button>
                     </div>
 
                     {/* Quick Persona Switching */}
@@ -166,13 +198,12 @@ export const Navbar = ({ activeTab, setActiveTab, onOpenArthAI }) => {
                     <div className="border-t border-slate-800 pt-2 flex items-center justify-between">
                       <button
                         onClick={() => {
-                          setAuthMode('persona');
-                          setAuthModalOpen(true);
+                          setOnboardingOpen(true);
                           setProfileDropdownOpen(false);
                         }}
-                        className="text-xs text-brand-400 hover:text-brand-300 flex items-center gap-1"
+                        className="text-xs text-indigo-400 hover:text-indigo-300 flex items-center gap-1"
                       >
-                        <Layers className="w-3.5 h-3.5" /> All Personas
+                        <Settings className="w-3.5 h-3.5" /> Onboarding Wizard
                       </button>
                       <button
                         onClick={() => {
@@ -196,7 +227,7 @@ export const Navbar = ({ activeTab, setActiveTab, onOpenArthAI }) => {
                   }}
                   className="px-3.5 py-1.5 rounded-xl text-sm font-semibold text-slate-200 hover:text-white hover:bg-slate-800/80 transition-colors"
                 >
-                  Log In
+                  Sign In
                 </button>
                 <button
                   onClick={() => {
@@ -213,30 +244,32 @@ export const Navbar = ({ activeTab, setActiveTab, onOpenArthAI }) => {
 
         </div>
 
-        {/* Mobile Navigation Row */}
-        <div className="md:hidden flex items-center justify-around py-2 border-t border-slate-800/60 overflow-x-auto">
-          {navItems.map((item) => {
-            const Icon = item.icon;
-            const isActive = activeTab === item.id;
-            return (
-              <button
-                key={item.id}
-                onClick={() => {
-                  setActiveTab(item.id);
-                  if (item.id === 'advisor' && onOpenArthAI) {
-                    onOpenArthAI();
-                  }
-                }}
-                className={`flex flex-col items-center gap-1 px-3 py-1 text-[11px] font-medium transition-colors ${
-                  isActive ? 'text-brand-400 font-bold' : 'text-slate-400'
-                }`}
-              >
-                <Icon className="w-4 h-4" />
-                <span className="whitespace-nowrap">{item.label.split(' ')[0]}</span>
-              </button>
-            );
-          })}
-        </div>
+        {/* Mobile Navigation Row (If signed in) */}
+        {currentUser && (
+          <div className="md:hidden flex items-center justify-around py-2 border-t border-slate-800/60 overflow-x-auto">
+            {navItems.map((item) => {
+              const Icon = item.icon;
+              const isActive = activeTab === item.id;
+              return (
+                <button
+                  key={item.id}
+                  onClick={() => {
+                    setActiveTab(item.id);
+                    if (item.id === 'advisor' && onOpenArthAI) {
+                      onOpenArthAI();
+                    }
+                  }}
+                  className={`flex flex-col items-center gap-1 px-3 py-1 text-[11px] font-medium transition-colors ${
+                    isActive ? 'text-brand-400 font-bold' : 'text-slate-400'
+                  }`}
+                >
+                  <Icon className="w-4 h-4" />
+                  <span className="whitespace-nowrap">{item.label.split(' ')[0]}</span>
+                </button>
+              );
+            })}
+          </div>
+        )}
       </div>
     </header>
   );
