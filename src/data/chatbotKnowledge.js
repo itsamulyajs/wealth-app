@@ -5,8 +5,12 @@
  * 1. Personal Finance & Savings Planning (Goal timelines, tailored budgets, purchase timelines)
  * 2. Travel & Vacation Planning (Real-time cost breakdowns, itineraries, budget vs luxury, currency conversion)
  * 3. Stock Market & Investment Advice (Nifty 50, stock fundamentals, valuation metrics, buy/sell indicators)
- * 4. Real-time Market Data, Currency Converter & Weather Integration
+ * 4. Multi-Asset Risk Intelligence & 8-Part Financial Health Report
+ * 5. Real-time Market Data, Currency Converter & Weather Integration
  */
+
+import { formatINR } from '../utils/financeCalculators';
+import { analyzeMultiAssetRisk } from '../utils/riskIntelligenceEngine';
 
 // 1. Stock Market Data (Indian NSE / BSE Bluechips & Indices)
 export const LIVE_STOCKS_DATA = {
@@ -109,6 +113,15 @@ export const LIVE_EXCHANGE_RATES = {
 // 4. Categorized Suggested Prompt Chips
 export const ENHANCED_PROMPT_CATEGORIES = [
   {
+    category: '📊 Multi-Asset Risk & Health',
+    prompts: [
+      'Generate my complete Multi-Asset Risk Profile Report',
+      'How adequate is my Emergency Fund for 3-6 months?',
+      'Show my 5, 10, and 20-year portfolio projections (Best/Realistic/Worst)',
+      'How does my financial health score compare to average Indian peers?'
+    ]
+  },
+  {
     category: '💰 Savings & Budgeting',
     prompts: [
       'How long will it take to save ₹1,50,000 for a new MacBook?',
@@ -134,22 +147,13 @@ export const ENHANCED_PROMPT_CATEGORIES = [
       'When is the best time to buy stocks: Lumpsum or DCA (SIP)?',
       'How to diversify a ₹5 Lakh portfolio across Indian sectors?'
     ]
-  },
-  {
-    category: '🌐 Market News & Trends',
-    prompts: [
-      'What are the latest Indian stock market trends and sentiments?',
-      'Explain why Nifty 50 index funds are safer than picking individual stocks',
-      'Compare returns: Gold SGB vs Nifty 50 over the last 5 years'
-    ]
   }
 ];
 
 export const ARTHAI_PROMPTS = [
-  'Is ₹2,500/month enough to start investing as a student?',
-  'How should I allocate my portfolio between Equity, Debt, and Gold?',
-  'Explain Old Tax Regime vs New Tax Regime for salaried people',
-  'What is the 50-30-20 rule and how do I apply it to my salary?',
+  'Generate my complete Multi-Asset Risk Profile Report',
+  'How adequate is my Emergency Fund for 3-6 months?',
+  'Show my 5, 10, and 20-year portfolio projections (Best/Realistic/Worst)',
   'Plan a 5-day budget trip to Bali from India with cost breakdown',
   'What are the live prices & trends of Nifty 50, Reliance and TCS?',
   'How long will it take to save ₹1,50,000 for a new MacBook?'
@@ -162,8 +166,31 @@ export const resolveMultiDomainQuery = (query, userContext) => {
   const q = query.toLowerCase().trim();
   const name = userContext?.name?.split(' ')[0] || 'Investor';
   const monthlyIncome = userContext?.monthlyIncome || 50000;
+  const assets = userContext?.assets || { equity: 0, debt: 0, gold: 0, cash: 0, crypto: 0 };
+  const investments = userContext?.investments || [];
+  const goals = userContext?.goals || [];
 
-  // 1. Savings & Personal Finance Planning
+  // ----------------------------------------------------
+  // DOMAIN 1: 8-PART MULTI-ASSET RISK PROFILE & HEALTH REPORT
+  // ----------------------------------------------------
+  if (q.includes('risk report') || q.includes('multi-asset risk') || q.includes('financial health') || q.includes('emergency fund') || q.includes('projection') || q.includes('peer comparison') || q.includes('swot') || q.includes('review my risk')) {
+    const report = analyzeMultiAssetRisk(userContext, assets, investments, goals);
+
+    return {
+      type: 'risk_report',
+      data: report,
+      text: `### 🛡️ Comprehensive Multi-Asset Risk Profile & Financial Health Report for **${name}**\n\n---\n\n### 1. Risk Profile Summary\n- **Risk Tolerance Score**: **${report.riskScore10} / 10** (${report.profileCategory})\n- **Financial Health Score**: **${report.healthScore} / 100**\n- **Immediate Liquidity Access**: **${report.liquidityStatus.liquidityPct}%** (${formatINR(report.liquidityStatus.liquidAmount)})\n- **Emergency Cushion**: **${report.emergencyStatus.monthsCovered} Months** (${formatINR(report.emergencyStatus.currentAmount)} vs ${formatINR(report.emergencyStatus.targetAmount)} target)\n\n---\n\n### 2. Multi-Asset Exposure & Inflation Resistance\n\n| Asset Class | Allocation % | Current Value | Risk & Stability | Inflation Status |\n| :--- | :--- | :--- | :--- | :--- |\n| **Stocks & Mutual Funds** | ${report.multiAssetAnalysis[0].allocationPct}% | ${formatINR(report.multiAssetAnalysis[0].value)} | ${report.multiAssetAnalysis[0].riskLevel} | 🟢 Beats 6% Inflation |\n| **Fixed Deposits & PPF/EPF** | ${report.multiAssetAnalysis[2].allocationPct}% | ${formatINR(report.multiAssetAnalysis[2].value)} | Sovereign / Zero Risk | 🟢 7.1% - 8.25% Guaranteed |\n| **Sovereign Gold / Metals** | ${report.multiAssetAnalysis[3].allocationPct}% | ${formatINR(report.multiAssetAnalysis[3].value)} | Low-Moderate Hedge | 🟢 Crisis & Currency Hedge |\n| **Bank Savings / Cash** | ${report.multiAssetAnalysis[1].allocationPct}% | ${formatINR(report.multiAssetAnalysis[1].value)} | DICGC Insured up to ₹5L | 🔴 Loses to Inflation (~3.5%) |\n| **Cryptocurrencies** | ${report.multiAssetAnalysis[4].allocationPct}% | ${formatINR(report.multiAssetAnalysis[4].value)} | Extreme Speculative | ⚠️ Flat 30% Tax in India |\n\n---\n\n### 3. Future Compounding Scenarios (5 to 20 Years)\n- 🌟 **Best Case (Bull Market @ 16% CAGR)**: **${formatINR(report.projections.bestCase.data[4].total)}** in 20 Years\n- 📊 **Realistic Case (Nifty Historical @ 12.5% CAGR)**: **${formatINR(report.projections.realisticCase.data[4].total)}** in 20 Years\n- 🌧️ **Worst Case (Stagnant Market @ 7% CAGR)**: **${formatINR(report.projections.worstCase.data[4].total)}** in 20 Years\n\n---\n\n### 4. Key Strengths & Priority Action Roadmap\n**Strengths:**\n${report.strengths.map(s => `- ✅ ${s}`).join('\n')}\n\n**Actionable Next Steps:**\n${report.actionItems.map((a, i) => `${i + 1}. 📌 ${a}`).join('\n')}`,
+      suggestedNext: [
+        'How adequate is my Emergency Fund for 3-6 months?',
+        'How does my financial health score compare to average Indian peers?',
+        'How long will it take to save ₹1,50,000 for a new MacBook?'
+      ]
+    };
+  }
+
+  // ----------------------------------------------------
+  // DOMAIN 2: SAVINGS & PERSONAL FINANCE PLANNING
+  // ----------------------------------------------------
   if (q.includes('save for') || q.includes('how long to save') || q.includes('macbook') || q.includes('iphone') || q.includes('bike') || q.includes('wedding') || q.includes('savings plan')) {
     let target = 150000;
     let item = 'your purchase';
@@ -198,7 +225,9 @@ export const resolveMultiDomainQuery = (query, userContext) => {
     };
   }
 
-  // 2. Travel & Vacation Planning
+  // ----------------------------------------------------
+  // DOMAIN 3: TRAVEL & VACATION COST PLANNING
+  // ----------------------------------------------------
   if (q.includes('travel') || q.includes('trip') || q.includes('vacation') || q.includes('bali') || q.includes('goa') || q.includes('dubai') || q.includes('thailand') || q.includes('manali') || q.includes('flight') || q.includes('hotel')) {
     let destKey = 'bali';
     if (q.includes('goa')) destKey = 'goa';
@@ -220,7 +249,9 @@ export const resolveMultiDomainQuery = (query, userContext) => {
     };
   }
 
-  // 3. Currency Conversion
+  // ----------------------------------------------------
+  // DOMAIN 4: CURRENCY CONVERSION
+  // ----------------------------------------------------
   if (q.includes('convert') || q.includes('currency') || q.includes('inr to usd') || q.includes('forex') || q.includes('exchange rate')) {
     let amountINR = 50000;
     const match = q.match(/\d+[\d,]*/);
@@ -247,7 +278,9 @@ export const resolveMultiDomainQuery = (query, userContext) => {
     };
   }
 
-  // 4. Stock Market & Investment Advice
+  // ----------------------------------------------------
+  // DOMAIN 5: STOCK MARKET & LIVE INVESTMENT TRENDS
+  // ----------------------------------------------------
   if (q.includes('stock') || q.includes('nifty') || q.includes('sensex') || q.includes('reliance') || q.includes('tcs') || q.includes('hdfc') || q.includes('share price') || q.includes('market trend') || q.includes('pe ratio') || q.includes('when to buy')) {
     
     if (q.includes('pe ratio') || q.includes('market cap') || q.includes('explain how stocks work')) {
@@ -272,15 +305,17 @@ export const resolveMultiDomainQuery = (query, userContext) => {
     };
   }
 
-  // 5. Standard General Response
+  // ----------------------------------------------------
+  // DOMAIN 6: STANDARD GENERAL ADVISOR FALLBACK
+  // ----------------------------------------------------
   return {
     type: 'general_advisor',
-    text: `Hello ${name}! I'm **ArthAI 2.0**, your all-in-one Financial Intelligence & Life Planner. I specialize in:\n\n- 💰 **Savings & Goal Planning**: Calculating purchase timelines for MacBooks, gadgets, weddings, and emergency buffers.\n- ✈️ **Travel Budgeting**: Real-time cost breakdowns, itineraries, and luxury vs budget comparisons for Goa, Bali, Dubai, Thailand, and Manali.\n- 💱 **Currency Conversion**: Live INR exchange rates against USD, EUR, GBP, AED, THB, and IDR.\n- 📈 **Stock Market & Trends**: Nifty 50 analysis, P/E valuations, bluechip stock tracking, and DCA investment strategies.\n\n*Click on any suggested prompt below or type your question directly!*`,
+    text: `Hello ${name}! I'm **ArthAI 2.0**, your all-in-one Financial Intelligence & Life Planner. I specialize in:\n\n- 🛡️ **Multi-Asset Risk & Health Report**: 8-pillar scorecard, 5-20Y projections, and emergency buffer adequacy.\n- 💰 **Savings & Goal Planning**: Calculating purchase timelines for MacBooks, gadgets, weddings, and emergency buffers.\n- ✈️ **Travel Budgeting**: Real-time cost breakdowns, itineraries, and luxury vs budget comparisons for Goa, Bali, Dubai, Thailand, and Manali.\n- 💱 **Currency Conversion**: Live INR exchange rates against USD, EUR, GBP, AED, THB, and IDR.\n- 📈 **Stock Market & Trends**: Nifty 50 analysis, P/E valuations, bluechip stock tracking, and DCA investment strategies.\n\n*Click on any suggested prompt below or type your question directly!*`,
     suggestedNext: [
+      'Generate my complete Multi-Asset Risk Profile Report',
       'Plan a 5-day budget trip to Bali from India with cost breakdown',
       'What are the live prices & trends of Nifty 50, Reliance and TCS?',
-      'How long will it take to save ₹1,50,000 for a new MacBook?',
-      'Convert ₹50,000 to USD, EUR, and Thai Baht'
+      'How long will it take to save ₹1,50,000 for a new MacBook?'
     ]
   };
 };

@@ -8,7 +8,7 @@ import { EditProfileModal } from './components/profile/EditProfileModal';
 import { FuturisticLoginHero } from './components/auth/FuturisticLoginHero';
 import { PortfolioDashboard } from './components/dashboard/PortfolioDashboard';
 import { MarketExplorer } from './components/market/MarketExplorer';
-import { RiskProfiler } from './components/risk/RiskProfiler';
+import { AdvancedRiskHub } from './components/risk/AdvancedRiskHub';
 import { GoalPlanner } from './components/goals/GoalPlanner';
 import { MythBusterHub } from './components/literacy/MythBusterHub';
 import { ArthAIChatbot, FloatingChatButton } from './components/chatbot/ArthAIChatbot';
@@ -57,7 +57,9 @@ const MainContent = () => {
             )}
 
             {activeTab === 'risk' && (
-              <RiskProfiler />
+              <AdvancedRiskHub
+                onOpenArthAI={handleOpenArthAI}
+              />
             )}
 
             {activeTab === 'goals' && (
@@ -84,7 +86,7 @@ const MainContent = () => {
                     Launch Full ArthAI Chat Session
                   </button>
                 </div>
-                <MarketExplorer onOpenArthAI={handleOpenArthAI} />
+                <AdvancedRiskHub onOpenArthAI={handleOpenArthAI} />
               </div>
             )}
           </>
