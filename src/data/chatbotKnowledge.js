@@ -39,7 +39,7 @@ export const TRAVEL_DESTINATIONS = {
   'bali': {
     name: 'Bali, Indonesia',
     currency: 'IDR (Rp)',
-    rateToINR: 0.0053, // 1000 IDR ~ 5.3 INR
+    rateToINR: 0.0053,
     bestMonths: 'April to October (Dry season, gentle breeze, 27°C)',
     budgetTrip: { days: 6, flights: 28000, stay: 14000, food: 10000, activities: 9000, total: 61000 },
     luxuryTrip: { days: 6, flights: 48000, stay: 55000, food: 28000, activities: 25000, total: 156000 },
@@ -53,7 +53,7 @@ export const TRAVEL_DESTINATIONS = {
   'dubai': {
     name: 'Dubai, UAE',
     currency: 'AED (د.إ)',
-    rateToINR: 22.8, // 1 AED ~ 22.8 INR
+    rateToINR: 22.8,
     bestMonths: 'November to March (Cool winter, 20°C - 26°C)',
     budgetTrip: { days: 5, flights: 22000, stay: 20000, food: 14000, activities: 16000, total: 72000 },
     luxuryTrip: { days: 5, flights: 45000, stay: 65000, food: 35000, activities: 35000, total: 180000 },
@@ -68,7 +68,7 @@ export const TRAVEL_DESTINATIONS = {
   'thailand': {
     name: 'Bangkok & Phuket, Thailand',
     currency: 'THB (฿)',
-    rateToINR: 2.38, // 1 THB ~ 2.38 INR
+    rateToINR: 2.38,
     bestMonths: 'November to April (Pleasant beach weather, 28°C)',
     budgetTrip: { days: 6, flights: 20000, stay: 12000, food: 8000, activities: 10000, total: 50000 },
     luxuryTrip: { days: 6, flights: 38000, stay: 45000, food: 22000, activities: 24000, total: 129000 },
@@ -145,6 +145,16 @@ export const ENHANCED_PROMPT_CATEGORIES = [
   }
 ];
 
+export const ARTHAI_PROMPTS = [
+  'Is ₹2,500/month enough to start investing as a student?',
+  'How should I allocate my portfolio between Equity, Debt, and Gold?',
+  'Explain Old Tax Regime vs New Tax Regime for salaried people',
+  'What is the 50-30-20 rule and how do I apply it to my salary?',
+  'Plan a 5-day budget trip to Bali from India with cost breakdown',
+  'What are the live prices & trends of Nifty 50, Reliance and TCS?',
+  'How long will it take to save ₹1,50,000 for a new MacBook?'
+];
+
 /**
  * Intelligent Multi-Domain Query Resolver
  */
@@ -153,9 +163,7 @@ export const resolveMultiDomainQuery = (query, userContext) => {
   const name = userContext?.name?.split(' ')[0] || 'Investor';
   const monthlyIncome = userContext?.monthlyIncome || 50000;
 
-  // ----------------------------------------------------
-  // DOMAIN 1: SAVINGS & PERSONAL FINANCE PLANNING
-  // ----------------------------------------------------
+  // 1. Savings & Personal Finance Planning
   if (q.includes('save for') || q.includes('how long to save') || q.includes('macbook') || q.includes('iphone') || q.includes('bike') || q.includes('wedding') || q.includes('savings plan')) {
     let target = 150000;
     let item = 'your purchase';
@@ -190,9 +198,7 @@ export const resolveMultiDomainQuery = (query, userContext) => {
     };
   }
 
-  // ----------------------------------------------------
-  // DOMAIN 2: TRAVEL & VACATION COST PLANNING
-  // ----------------------------------------------------
+  // 2. Travel & Vacation Planning
   if (q.includes('travel') || q.includes('trip') || q.includes('vacation') || q.includes('bali') || q.includes('goa') || q.includes('dubai') || q.includes('thailand') || q.includes('manali') || q.includes('flight') || q.includes('hotel')) {
     let destKey = 'bali';
     if (q.includes('goa')) destKey = 'goa';
@@ -214,9 +220,7 @@ export const resolveMultiDomainQuery = (query, userContext) => {
     };
   }
 
-  // ----------------------------------------------------
-  // DOMAIN 3: CURRENCY CONVERSION
-  // ----------------------------------------------------
+  // 3. Currency Conversion
   if (q.includes('convert') || q.includes('currency') || q.includes('inr to usd') || q.includes('forex') || q.includes('exchange rate')) {
     let amountINR = 50000;
     const match = q.match(/\d+[\d,]*/);
@@ -243,12 +247,9 @@ export const resolveMultiDomainQuery = (query, userContext) => {
     };
   }
 
-  // ----------------------------------------------------
-  // DOMAIN 4: STOCK MARKET & LIVE INVESTMENT TRENDS
-  // ----------------------------------------------------
+  // 4. Stock Market & Investment Advice
   if (q.includes('stock') || q.includes('nifty') || q.includes('sensex') || q.includes('reliance') || q.includes('tcs') || q.includes('hdfc') || q.includes('share price') || q.includes('market trend') || q.includes('pe ratio') || q.includes('when to buy')) {
     
-    // Check if asking about PE ratio / concept
     if (q.includes('pe ratio') || q.includes('market cap') || q.includes('explain how stocks work')) {
       return {
         type: 'education_stock',
@@ -260,7 +261,6 @@ export const resolveMultiDomainQuery = (query, userContext) => {
       };
     }
 
-    // Default: Live Stocks & Indices Tracker
     return {
       type: 'stocks_feed',
       data: LIVE_STOCKS_DATA,
@@ -272,12 +272,10 @@ export const resolveMultiDomainQuery = (query, userContext) => {
     };
   }
 
-  // ----------------------------------------------------
-  // DOMAIN 5: STANDARD WEALTH & TAX FALLBACK
-  // ----------------------------------------------------
+  // 5. Standard General Response
   return {
     type: 'general_advisor',
-    text: `Hello ${name}! I'm **ArthAI**, your all-in-one Financial Intelligence & Life Planner. I specialize in:\n\n- 💰 **Savings & Goal Planning**: Calculating purchase timelines for MacBooks, gadgets, weddings, and emergency buffers.\n- ✈️ **Travel Budgeting**: Real-time cost breakdowns, itineraries, and luxury vs budget comparisons for Goa, Bali, Dubai, Thailand, and Manali.\n- 💱 **Currency Conversion**: Live INR exchange rates against USD, EUR, GBP, AED, THB, and IDR.\n- 📈 **Stock Market & Trends**: Nifty 50 analysis, P/E valuations, bluechip stock tracking, and DCA investment strategies.\n\n*Click on any suggested prompt below or type your question directly!*`,
+    text: `Hello ${name}! I'm **ArthAI 2.0**, your all-in-one Financial Intelligence & Life Planner. I specialize in:\n\n- 💰 **Savings & Goal Planning**: Calculating purchase timelines for MacBooks, gadgets, weddings, and emergency buffers.\n- ✈️ **Travel Budgeting**: Real-time cost breakdowns, itineraries, and luxury vs budget comparisons for Goa, Bali, Dubai, Thailand, and Manali.\n- 💱 **Currency Conversion**: Live INR exchange rates against USD, EUR, GBP, AED, THB, and IDR.\n- 📈 **Stock Market & Trends**: Nifty 50 analysis, P/E valuations, bluechip stock tracking, and DCA investment strategies.\n\n*Click on any suggested prompt below or type your question directly!*`,
     suggestedNext: [
       'Plan a 5-day budget trip to Bali from India with cost breakdown',
       'What are the live prices & trends of Nifty 50, Reliance and TCS?',
@@ -286,3 +284,5 @@ export const resolveMultiDomainQuery = (query, userContext) => {
     ]
   };
 };
+
+export const getSmartArthAIResponse = resolveMultiDomainQuery;
