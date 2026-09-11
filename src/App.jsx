@@ -10,7 +10,7 @@ import { PortfolioDashboard } from './components/dashboard/PortfolioDashboard';
 import { MarketExplorer } from './components/market/MarketExplorer';
 import { AdvancedRiskHub } from './components/risk/AdvancedRiskHub';
 import { GoalPlanner } from './components/goals/GoalPlanner';
-import { MythBusterHub } from './components/literacy/MythBusterHub';
+import { MarketInsightsHub } from './components/literacy/MarketInsightsHub';
 import { ArthAIChatbot, FloatingChatButton } from './components/chatbot/ArthAIChatbot';
 import { Footer } from './components/layout/Footer';
 
@@ -67,7 +67,7 @@ const MainContent = () => {
             )}
 
             {activeTab === 'literacy' && (
-              <MythBusterHub />
+              <MarketInsightsHub />
             )}
 
             {activeTab === 'advisor' && (

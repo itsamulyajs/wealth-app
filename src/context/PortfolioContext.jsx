@@ -22,6 +22,23 @@ export const PortfolioProvider = ({ children }) => {
     }
   }, [currentUser]);
 
+  // Direct manual asset values update & save
+  const updateDirectAssets = (newAssets) => {
+    const formatted = {
+      equity: Number(newAssets.equity) || 0,
+      debt: Number(newAssets.debt) || 0,
+      gold: Number(newAssets.gold) || 0,
+      cash: Number(newAssets.cash) || 0,
+      crypto: Number(newAssets.crypto) || 0,
+    };
+    setAssets(formatted);
+    const newNetWorth = Object.values(formatted).reduce((sum, v) => sum + v, 0);
+    updateUserProfile({
+      assets: formatted,
+      netWorth: newNetWorth,
+    });
+  };
+
   // Add new investment
   const addInvestment = (investment) => {
     const newInv = {
@@ -51,6 +68,17 @@ export const PortfolioProvider = ({ children }) => {
       investments: updatedList,
       assets: updatedAssets,
       netWorth: newNetWorth,
+      monthlySIPTotal: newMonthlySIP
+    });
+  };
+
+  // Update existing investment
+  const updateInvestment = (id, updatedFields) => {
+    const updatedList = investments.map(i => i.id === id ? { ...i, ...updatedFields } : i);
+    setInvestments(updatedList);
+    const newMonthlySIP = updatedList.reduce((sum, item) => sum + Number(item.monthlySIP || 0), 0);
+    updateUserProfile({
+      investments: updatedList,
       monthlySIPTotal: newMonthlySIP
     });
   };
@@ -120,6 +148,8 @@ export const PortfolioProvider = ({ children }) => {
         goals,
         assets,
         riskProfile,
+        updateDirectAssets,
+        updateInvestment,
         addInvestment,
         removeInvestment,
         addGoal,

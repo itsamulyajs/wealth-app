@@ -1,451 +1,446 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
+import { useAuth } from '../../context/AuthContext';
 import { usePortfolio } from '../../context/PortfolioContext';
-import { calculateSIP, calculateRequiredSIP, formatINR } from '../../utils/financeCalculators';
-import { 
-  Target, 
-  TrendingUp, 
-  Flame, 
-  Calendar, 
-  ShieldCheck, 
-  Home, 
-  GraduationCap, 
-  Plane, 
-  Plus, 
-  Trash2, 
-  Sparkles,
-  Layers,
-  ArrowRight
+import { formatINR } from '../../utils/financeCalculators';
+import {
+  Target, Plus, Trash2, Edit3, CheckCircle2, AlertTriangle,
+  XCircle, TrendingUp, Clock, Sparkles, Save, X, ChevronRight,
+  BarChart3, ArrowUpRight, ArrowDownRight, SlidersHorizontal, Zap
 } from 'lucide-react';
-import { AreaChart, Area, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid } from 'recharts';
+import {
+  ResponsiveContainer, AreaChart, Area, BarChart, Bar, XAxis, YAxis,
+  Tooltip, CartesianGrid, Cell, LineChart, Line, Legend
+} from 'recharts';
+
+const DEFAULT_GOALS = [];
 
 export const GoalPlanner = () => {
-  const { goals, addGoal, removeGoal } = usePortfolio();
+  const { currentUser } = useAuth();
+  const monthlyIncome = currentUser?.monthlyIncome || 50000;
 
-  // Interactive Simulator Controls
-  const [calculatorMode, setCalculatorMode] = useState('sipToWealth'); // 'sipToWealth' | 'targetToSIP'
-  const [monthlySIP, setMonthlySIP] = useState(10000);
-  const [targetAmount, setTargetAmount] = useState(2500000);
-  const [years, setYears] = useState(10);
-  const [expectedReturn, setExpectedReturn] = useState(13); // Nifty CAGR average
-  const [inflationRate, setInflationRate] = useState(6);
-  const [adjustInflation, setAdjustInflation] = useState(true);
+  const [goals, setGoals] = useState(() => {
+    try {
+      const saved = localStorage.getItem('arthsaathi_goals');
+      return saved ? JSON.parse(saved) : DEFAULT_GOALS;
+    } catch { return DEFAULT_GOALS; }
+  });
 
-  // New Goal Form Modal / Accordion state
-  const [showAddGoal, setShowAddGoal] = useState(false);
-  const [newGoalTitle, setNewGoalTitle] = useState('');
-  const [newGoalTarget, setNewGoalTarget] = useState('');
-  const [newGoalCurrent, setNewGoalCurrent] = useState('');
-  const [newGoalSIP, setNewGoalSIP] = useState('');
-  const [newGoalDate, setNewGoalDate] = useState('2028-12-31');
-  const [newGoalCategory, setNewGoalCategory] = useState('Real Estate');
+  const [showAddModal, setShowAddModal] = useState(false);
+  const [editingGoal, setEditingGoal] = useState(null);
+  const [selectedGoalId, setSelectedGoalId] = useState(null);
+  const [whatIfMode, setWhatIfMode] = useState(false);
+  const [whatIfSIP, setWhatIfSIP] = useState(0);
+  const [whatIfReturn, setWhatIfReturn] = useState(12);
+  const [whatIfYears, setWhatIfYears] = useState(5);
 
-  // Compute Results
-  const sipResult = calculateSIP(monthlySIP, expectedReturn, years);
-  const goalSIPResult = calculateRequiredSIP(targetAmount, expectedReturn, years, inflationRate);
+  // Form state
+  const [formName, setFormName] = useState('');
+  const [formTarget, setFormTarget] = useState(500000);
+  const [formMonthly, setFormMonthly] = useState(5000);
+  const [formSaved, setFormSaved] = useState(0);
+  const [formYears, setFormYears] = useState(5);
+  const [formReturn, setFormReturn] = useState(12);
+  const [formPriority, setFormPriority] = useState('Medium');
+  const [formIcon, setFormIcon] = useState('🏠');
 
-  // Inflation adjusted real purchasing power
-  const realPurchasingPower = Math.round(
-    sipResult.totalValue / Math.pow(1 + inflationRate / 100, years)
-  );
-
-  const handleCreateGoal = (e) => {
-    e.preventDefault();
-    if (!newGoalTitle || !newGoalTarget) return;
-
-    addGoal({
-      title: newGoalTitle,
-      targetAmount: Number(newGoalTarget),
-      currentAmount: Number(newGoalCurrent || 0),
-      monthlySIP: Number(newGoalSIP || 0),
-      targetDate: newGoalDate,
-      category: newGoalCategory
-    });
-
-    setShowAddGoal(false);
-    setNewGoalTitle('');
-    setNewGoalTarget('');
-    setNewGoalCurrent('');
-    setNewGoalSIP('');
+  const persistGoals = (updated) => {
+    setGoals(updated);
+    localStorage.setItem('arthsaathi_goals', JSON.stringify(updated));
   };
+
+  const openAddModal = () => {
+    setEditingGoal(null);
+    setFormName(''); setFormTarget(500000); setFormMonthly(5000);
+    setFormSaved(0); setFormYears(5); setFormReturn(12);
+    setFormPriority('Medium'); setFormIcon('🏠');
+    setShowAddModal(true);
+  };
+
+  const openEditModal = (goal) => {
+    setEditingGoal(goal.id);
+    setFormName(goal.name); setFormTarget(goal.target); setFormMonthly(goal.monthlySIP);
+    setFormSaved(goal.savedSoFar); setFormYears(goal.years); setFormReturn(goal.expectedReturn);
+    setFormPriority(goal.priority); setFormIcon(goal.icon);
+    setShowAddModal(true);
+  };
+
+  const handleSaveGoal = () => {
+    if (!formName || formTarget <= 0) return;
+    const now = new Date().toISOString();
+    if (editingGoal) {
+      persistGoals(goals.map(g => g.id === editingGoal ? {
+        ...g, name: formName, target: formTarget, monthlySIP: formMonthly,
+        savedSoFar: formSaved, years: formYears, expectedReturn: formReturn,
+        priority: formPriority, icon: formIcon, updatedAt: now
+      } : g));
+    } else {
+      persistGoals([...goals, {
+        id: Date.now().toString(),
+        name: formName, target: formTarget, monthlySIP: formMonthly,
+        savedSoFar: formSaved, years: formYears, expectedReturn: formReturn,
+        priority: formPriority, icon: formIcon,
+        createdAt: now, updatedAt: now
+      }]);
+    }
+    setShowAddModal(false);
+  };
+
+  const deleteGoal = (id) => persistGoals(goals.filter(g => g.id !== id));
+
+  const updateSavedAmount = (id, newAmount) => {
+    persistGoals(goals.map(g => g.id === id ? { ...g, savedSoFar: Number(newAmount), updatedAt: new Date().toISOString() } : g));
+  };
+
+  // Calculate goal analytics
+  const calcGoalAnalytics = (goal) => {
+    const { target, monthlySIP, savedSoFar, years, expectedReturn } = goal;
+    const months = years * 12;
+    const i = (expectedReturn / 100) / 12;
+    const fvSIP = monthlySIP * (((Math.pow(1 + i, months) - 1) / i) * (1 + i));
+    const fvSaved = savedSoFar * Math.pow(1 + expectedReturn / 100, years);
+    const totalProjected = fvSIP + fvSaved;
+    const totalInvested = (monthlySIP * months) + savedSoFar;
+    const interestEarned = totalProjected - totalInvested;
+    const progressPct = Math.min(100, Math.round((savedSoFar / Math.max(1, target)) * 100));
+    const gap = target - totalProjected;
+    const onTrack = totalProjected >= target;
+
+    // Pace analysis
+    const monthsElapsed = Math.max(1, Math.round((Date.now() - new Date(goal.createdAt || Date.now()).getTime()) / (1000 * 60 * 60 * 24 * 30)));
+    const expectedSavedByNow = (target / months) * monthsElapsed;
+    const paceDiff = savedSoFar - expectedSavedByNow;
+
+    let paceStatus, paceMsg, paceColor;
+    if (paceDiff > 0) {
+      const monthsAhead = Math.round(paceDiff / Math.max(1, monthlySIP));
+      paceStatus = 'ahead';
+      paceMsg = `You're ahead of pace — could reach goal ${monthsAhead} month(s) early!`;
+      paceColor = 'text-emerald-400';
+    } else if (Math.abs(paceDiff) < monthlySIP * 2) {
+      const extraNeeded = Math.round(Math.abs(paceDiff) / Math.max(1, months - monthsElapsed));
+      paceStatus = 'slightly_behind';
+      paceMsg = `Slightly behind — increase savings by ${formatINR(extraNeeded)}/mo to catch up.`;
+      paceColor = 'text-amber-400';
+    } else {
+      paceStatus = 'behind';
+      paceMsg = `Significantly behind — won't reach goal without adjustments.`;
+      paceColor = 'text-rose-400';
+    }
+
+    // Monthly progress chart data
+    const monthlyProgressData = [];
+    let cumSaved = savedSoFar;
+    for (let m = 0; m <= Math.min(months, 60); m += (months > 24 ? 6 : 1)) {
+      const fv = savedSoFar * Math.pow(1 + i, m) + monthlySIP * (m > 0 ? (((Math.pow(1 + i, m) - 1) / i) * (1 + i)) : 0);
+      const linearTarget = (target / months) * m + savedSoFar;
+      monthlyProgressData.push({
+        month: m === 0 ? 'Now' : `${m}mo`,
+        projected: Math.round(fv),
+        target: Math.round(linearTarget),
+        actual: m === 0 ? savedSoFar : null
+      });
+    }
+
+    return {
+      totalProjected: Math.round(totalProjected),
+      totalInvested: Math.round(totalInvested),
+      interestEarned: Math.round(interestEarned),
+      progressPct,
+      gap: Math.round(gap),
+      onTrack,
+      paceStatus, paceMsg, paceColor,
+      monthlyProgressData,
+      monthsRemaining: months - (monthsElapsed || 0)
+    };
+  };
+
+  // What-If Simulator
+  const whatIfResult = useMemo(() => {
+    if (!whatIfMode) return null;
+    const months = whatIfYears * 12;
+    const i = (whatIfReturn / 100) / 12;
+    const fv = whatIfSIP * (((Math.pow(1 + i, months) - 1) / i) * (1 + i));
+    const invested = whatIfSIP * months;
+    return { corpus: Math.round(fv), invested, interest: Math.round(fv - invested) };
+  }, [whatIfSIP, whatIfReturn, whatIfYears, whatIfMode]);
+
+  const selectedGoal = goals.find(g => g.id === selectedGoalId);
+
+  const iconOptions = ['🏠', '🚗', '💻', '📱', '🎓', '💍', '✈️', '🏥', '👶', '🔒', '💰', '🎯'];
+  const priorityOptions = ['Low', 'Medium', 'High', 'Critical'];
 
   return (
     <div className="space-y-8 animate-fade-in">
-      
-      {/* Header Banner */}
-      <div className="p-6 sm:p-8 rounded-3xl bg-gradient-to-br from-slate-900 via-slate-900/90 to-indigo-950/40 border border-slate-800 shadow-xl relative overflow-hidden">
-        <div className="relative z-10">
-          <div className="flex items-center gap-2.5 text-indigo-400 text-xs font-bold uppercase tracking-wider mb-2">
-            <Target className="w-4 h-4" />
-            Goal-Based Wealth Engineering
+
+      {/* Header */}
+      <div className="p-6 sm:p-8 rounded-3xl bg-gradient-to-br from-slate-900 via-slate-900/90 to-brand-950/30 border border-slate-800 shadow-xl">
+        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+          <div>
+            <div className="flex items-center gap-2 text-brand-400 text-xs font-bold uppercase tracking-wider mb-2">
+              <Target className="w-4 h-4" /> Goal-Based SIP Simulator & Progress Tracker
+            </div>
+            <h2 className="text-2xl sm:text-3xl font-extrabold text-white">
+              Track, Edit & Simulate Every Financial Goal
+            </h2>
+            <p className="text-sm text-slate-300 mt-1">Create unlimited goals, manually update savings, track pace, and run What-If scenarios.</p>
           </div>
-          <h2 className="text-2xl sm:text-3xl font-extrabold text-white">
-            Transform Life Dreams into Mathematical Certainty
-          </h2>
-          <p className="text-sm text-slate-300 max-w-2xl mt-2 leading-relaxed">
-            Investing without a specific goal leads to impulse panic-selling. Define your milestones, account for India's 6% inflation, and automate the required monthly SIP.
-          </p>
+          <div className="flex gap-2">
+            <button onClick={() => setWhatIfMode(!whatIfMode)}
+              className={`px-4 py-2.5 rounded-xl text-xs font-bold transition-all flex items-center gap-1.5 ${whatIfMode ? 'bg-indigo-500 text-white' : 'bg-slate-800 border border-slate-700 text-slate-300 hover:text-white'}`}>
+              <SlidersHorizontal className="w-3.5 h-3.5" /> What-If Simulator
+            </button>
+            <button onClick={openAddModal}
+              className="px-4 py-2.5 rounded-xl text-xs font-bold bg-brand-500 hover:bg-brand-400 text-slate-950 shadow-lg shadow-brand-500/20 flex items-center gap-1.5">
+              <Plus className="w-3.5 h-3.5" /> Add New Goal
+            </button>
+          </div>
         </div>
       </div>
 
-      {/* Active User Goals Section */}
-      <div className="p-6 sm:p-8 rounded-3xl bg-slate-900 border border-slate-800 shadow-xl space-y-6">
-        <div className="flex items-center justify-between">
-          <div>
-            <h3 className="text-lg font-bold text-white flex items-center gap-2">
-              <Layers className="w-5 h-5 text-brand-400" /> Active Milestones ({goals.length})
-            </h3>
-            <p className="text-xs text-slate-400">Track your progress and target completion dates</p>
+      {/* What-If Simulator Panel */}
+      {whatIfMode && (
+        <div className="p-6 rounded-3xl bg-indigo-950/30 border border-indigo-500/30 shadow-xl space-y-4 animate-fade-in">
+          <h3 className="text-sm font-bold text-indigo-300 uppercase tracking-wider flex items-center gap-2">
+            <Zap className="w-4 h-4" /> Real-Time What-If Adjustments
+          </h3>
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+            <div>
+              <label className="text-xs text-slate-400 block mb-1">Monthly SIP (₹)</label>
+              <input type="number" value={whatIfSIP} onChange={e => setWhatIfSIP(Number(e.target.value))}
+                className="w-full px-3 py-2 bg-slate-950 border border-slate-800 rounded-xl text-sm text-white font-mono focus:border-indigo-500" />
+            </div>
+            <div>
+              <label className="text-xs text-slate-400 block mb-1">Expected Return (%)</label>
+              <input type="number" step="0.5" value={whatIfReturn} onChange={e => setWhatIfReturn(Number(e.target.value))}
+                className="w-full px-3 py-2 bg-slate-950 border border-slate-800 rounded-xl text-sm text-white font-mono focus:border-indigo-500" />
+            </div>
+            <div>
+              <label className="text-xs text-slate-400 block mb-1">Time Horizon (Years)</label>
+              <input type="number" value={whatIfYears} onChange={e => setWhatIfYears(Number(e.target.value))}
+                className="w-full px-3 py-2 bg-slate-950 border border-slate-800 rounded-xl text-sm text-white font-mono focus:border-indigo-500" />
+            </div>
           </div>
-          <button
-            onClick={() => setShowAddGoal(!showAddGoal)}
-            className="flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl bg-brand-500 hover:bg-brand-400 text-slate-950 text-xs font-bold transition-all shadow-md shadow-brand-500/20"
-          >
-            <Plus className="w-4 h-4" /> Add Goal
+          {whatIfResult && (
+            <div className="grid grid-cols-3 gap-4 pt-2">
+              <div className="p-4 rounded-2xl bg-slate-900 border border-slate-800">
+                <span className="text-[10px] text-slate-400 block">Total Corpus</span>
+                <span className="text-xl font-black text-brand-400 font-mono">{formatINR(whatIfResult.corpus)}</span>
+              </div>
+              <div className="p-4 rounded-2xl bg-slate-900 border border-slate-800">
+                <span className="text-[10px] text-slate-400 block">Total Invested</span>
+                <span className="text-xl font-black text-white font-mono">{formatINR(whatIfResult.invested)}</span>
+              </div>
+              <div className="p-4 rounded-2xl bg-slate-900 border border-slate-800">
+                <span className="text-[10px] text-slate-400 block">Interest Earned</span>
+                <span className="text-xl font-black text-emerald-400 font-mono">{formatINR(whatIfResult.interest)}</span>
+              </div>
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* Goals Grid */}
+      {goals.length === 0 ? (
+        <div className="p-12 rounded-3xl bg-slate-900 border border-slate-800 text-center space-y-4">
+          <Target className="w-12 h-12 text-slate-600 mx-auto" />
+          <h3 className="text-lg font-bold text-white">No Goals Created Yet</h3>
+          <p className="text-sm text-slate-400">Create your first financial goal to start tracking progress!</p>
+          <button onClick={openAddModal} className="px-6 py-3 bg-brand-500 text-slate-950 font-bold rounded-xl">
+            <Plus className="w-4 h-4 inline mr-1" /> Create First Goal
           </button>
         </div>
-
-        {/* Add Goal Form Toggle */}
-        {showAddGoal && (
-          <form onSubmit={handleCreateGoal} className="p-5 rounded-2xl bg-slate-950 border border-brand-500/30 space-y-4 animate-slide-up">
-            <h4 className="text-xs font-bold text-brand-400 uppercase tracking-wider">Create New Financial Goal</h4>
-            
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-              <div>
-                <label className="block text-xs font-semibold text-slate-300 mb-1">Goal Name</label>
-                <input
-                  type="text"
-                  placeholder="e.g. Higher Studies in UK or 2BHK Down Payment"
-                  value={newGoalTitle}
-                  onChange={(e) => setNewGoalTitle(e.target.value)}
-                  className="w-full px-3.5 py-2 bg-slate-900 border border-slate-800 rounded-xl text-xs text-white focus:outline-none focus:border-brand-500"
-                  required
-                />
-              </div>
-
-              <div>
-                <label className="block text-xs font-semibold text-slate-300 mb-1">Goal Category</label>
-                <select
-                  value={newGoalCategory}
-                  onChange={(e) => setNewGoalCategory(e.target.value)}
-                  className="w-full px-3.5 py-2 bg-slate-900 border border-slate-800 rounded-xl text-xs text-white focus:outline-none focus:border-brand-500"
-                >
-                  <option value="Real Estate">Real Estate / Home</option>
-                  <option value="Education">Education & Upskilling</option>
-                  <option value="Retirement">Retirement / FIRE</option>
-                  <option value="Security">Emergency Fund</option>
-                  <option value="Travel">Travel & Luxury</option>
-                  <option value="Vehicle">Vehicle / Car</option>
-                </select>
-              </div>
-            </div>
-
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-              <div>
-                <label className="block text-xs font-semibold text-slate-300 mb-1">Target Amount (₹)</label>
-                <input
-                  type="number"
-                  placeholder="₹ 10,00,000"
-                  value={newGoalTarget}
-                  onChange={(e) => setNewGoalTarget(e.target.value)}
-                  className="w-full px-3.5 py-2 bg-slate-900 border border-slate-800 rounded-xl text-xs text-white font-mono focus:outline-none focus:border-brand-500"
-                  required
-                />
-              </div>
-
-              <div>
-                <label className="block text-xs font-semibold text-slate-300 mb-1">Saved So Far (₹)</label>
-                <input
-                  type="number"
-                  placeholder="₹ 1,50,000"
-                  value={newGoalCurrent}
-                  onChange={(e) => setNewGoalCurrent(e.target.value)}
-                  className="w-full px-3.5 py-2 bg-slate-900 border border-slate-800 rounded-xl text-xs text-white font-mono focus:outline-none focus:border-brand-500"
-                />
-              </div>
-
-              <div>
-                <label className="block text-xs font-semibold text-slate-300 mb-1">Monthly SIP (₹)</label>
-                <input
-                  type="number"
-                  placeholder="₹ 5,000"
-                  value={newGoalSIP}
-                  onChange={(e) => setNewGoalSIP(e.target.value)}
-                  className="w-full px-3.5 py-2 bg-slate-900 border border-slate-800 rounded-xl text-xs text-white font-mono focus:outline-none focus:border-brand-500"
-                />
-              </div>
-            </div>
-
-            <div className="flex items-center justify-end gap-2 pt-2">
-              <button
-                type="button"
-                onClick={() => setShowAddGoal(false)}
-                className="px-3 py-1.5 text-xs text-slate-400 hover:text-white"
-              >
-                Cancel
-              </button>
-              <button
-                type="submit"
-                className="px-4 py-1.5 bg-brand-500 hover:bg-brand-400 text-slate-950 text-xs font-bold rounded-xl"
-              >
-                Save Goal
-              </button>
-            </div>
-          </form>
-        )}
-
-        {/* Goals Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          {goals.map((g) => {
-            const pct = Math.min(100, Math.round(((g.currentAmount || 0) / g.targetAmount) * 100));
+      ) : (
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
+          {goals.sort((a, b) => {
+            const pr = { Critical: 0, High: 1, Medium: 2, Low: 3 };
+            return (pr[a.priority] || 2) - (pr[b.priority] || 2);
+          }).map(goal => {
+            const analytics = calcGoalAnalytics(goal);
+            const prColors = { Critical: 'bg-rose-500/20 text-rose-300 border-rose-500/30', High: 'bg-amber-500/20 text-amber-300 border-amber-500/30', Medium: 'bg-indigo-500/20 text-indigo-300 border-indigo-500/30', Low: 'bg-slate-700/30 text-slate-300 border-slate-600/30' };
             return (
-              <div
-                key={g.id}
-                className="p-5 rounded-2xl bg-slate-950/70 border border-slate-800 hover:border-slate-700 transition-all space-y-3 relative group"
-              >
+              <div key={goal.id} className="p-5 rounded-3xl bg-slate-900 border border-slate-800 shadow-xl space-y-4 hover:border-slate-700 transition-all flex flex-col">
                 <div className="flex items-start justify-between">
-                  <div>
-                    <span className="text-[10px] px-2 py-0.5 rounded-full bg-slate-800 text-brand-300 font-semibold">
-                      {g.category}
-                    </span>
-                    <h4 className="text-base font-bold text-white mt-1.5">{g.title}</h4>
-                    <p className="text-xs text-slate-400 flex items-center gap-1.5 mt-0.5">
-                      <Calendar className="w-3.5 h-3.5" /> Target: {g.targetDate || '2028'}
-                    </p>
+                  <div className="flex items-center gap-2.5">
+                    <span className="text-2xl">{goal.icon}</span>
+                    <div>
+                      <h4 className="text-sm font-bold text-white">{goal.name}</h4>
+                      <span className={`text-[10px] px-2 py-0.5 rounded-full border font-semibold ${prColors[goal.priority] || prColors.Medium}`}>
+                        {goal.priority} Priority
+                      </span>
+                    </div>
                   </div>
-
-                  <button
-                    onClick={() => removeGoal(g.id)}
-                    className="opacity-0 group-hover:opacity-100 p-1.5 text-slate-500 hover:text-rose-400 hover:bg-slate-800 rounded-lg transition-all"
-                  >
-                    <Trash2 className="w-4 h-4" />
-                  </button>
+                  <div className="flex gap-1">
+                    <button onClick={() => openEditModal(goal)} className="p-1.5 rounded-lg hover:bg-slate-800 text-slate-400 hover:text-white"><Edit3 className="w-3.5 h-3.5" /></button>
+                    <button onClick={() => deleteGoal(goal.id)} className="p-1.5 rounded-lg hover:bg-slate-800 text-slate-400 hover:text-rose-400"><Trash2 className="w-3.5 h-3.5" /></button>
+                  </div>
                 </div>
 
                 {/* Progress Bar */}
-                <div className="space-y-1.5 pt-1">
-                  <div className="flex justify-between text-xs font-mono">
-                    <span className="text-brand-400 font-bold">{formatINR(g.currentAmount)}</span>
-                    <span className="text-slate-400">Target: {formatINR(g.targetAmount)}</span>
+                <div className="space-y-1.5">
+                  <div className="flex justify-between text-[11px]">
+                    <span className="text-slate-400">Saved: <strong className="text-white">{formatINR(goal.savedSoFar)}</strong></span>
+                    <span className="text-slate-400">Target: <strong className="text-brand-400">{formatINR(goal.target)}</strong></span>
                   </div>
-                  <div className="w-full h-2.5 bg-slate-800 rounded-full overflow-hidden">
-                    <div
-                      className="h-full bg-gradient-to-r from-brand-500 to-indigo-400 rounded-full transition-all duration-500"
-                      style={{ width: `${pct}%` }}
-                    ></div>
+                  <div className="w-full h-3 bg-slate-800 rounded-full overflow-hidden">
+                    <div className={`h-full rounded-full transition-all ${analytics.progressPct >= 75 ? 'bg-emerald-500' : analytics.progressPct >= 40 ? 'bg-brand-500' : 'bg-indigo-500'}`}
+                      style={{ width: `${analytics.progressPct}%` }}></div>
                   </div>
-                  <div className="flex justify-between items-center text-[11px] text-slate-400">
-                    <span>{pct}% Achieved</span>
-                    {g.monthlySIP > 0 && (
-                      <span className="text-indigo-300 font-semibold font-mono">
-                        SIP: {formatINR(g.monthlySIP)}/mo
-                      </span>
-                    )}
+                  <span className="text-xs font-bold text-brand-400">{analytics.progressPct}% Complete</span>
+                </div>
+
+                {/* Manual Update Field */}
+                <div className="flex items-center gap-2">
+                  <input type="number" value={goal.savedSoFar}
+                    onChange={(e) => updateSavedAmount(goal.id, e.target.value)}
+                    className="flex-1 px-3 py-1.5 bg-slate-950 border border-slate-800 rounded-lg text-xs text-white font-mono focus:border-brand-500" />
+                  <span className="text-[10px] text-slate-400">Edit & Auto-Saves</span>
+                </div>
+
+                {/* Pace Indicator */}
+                <div className={`p-2.5 rounded-xl text-xs font-semibold flex items-center gap-1.5 ${
+                  analytics.paceStatus === 'ahead' ? 'bg-emerald-500/10 border border-emerald-500/20' :
+                  analytics.paceStatus === 'slightly_behind' ? 'bg-amber-500/10 border border-amber-500/20' :
+                  'bg-rose-500/10 border border-rose-500/20'
+                }`}>
+                  {analytics.paceStatus === 'ahead' ? <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400" /> :
+                   analytics.paceStatus === 'slightly_behind' ? <AlertTriangle className="w-3.5 h-3.5 text-amber-400" /> :
+                   <XCircle className="w-3.5 h-3.5 text-rose-400" />}
+                  <span className={analytics.paceColor}>{analytics.paceMsg}</span>
+                </div>
+
+                {/* Key Metrics */}
+                <div className="grid grid-cols-2 gap-2 text-[11px]">
+                  <div className="p-2 rounded-lg bg-slate-950 border border-slate-800">
+                    <span className="text-slate-400 block">Projected Corpus</span>
+                    <span className="font-bold text-white font-mono">{formatINR(analytics.totalProjected)}</span>
+                  </div>
+                  <div className="p-2 rounded-lg bg-slate-950 border border-slate-800">
+                    <span className="text-slate-400 block">Interest Earned</span>
+                    <span className="font-bold text-emerald-400 font-mono">{formatINR(analytics.interestEarned)}</span>
                   </div>
                 </div>
+
+                <button onClick={() => setSelectedGoalId(selectedGoalId === goal.id ? null : goal.id)}
+                  className="w-full py-2 text-xs font-bold text-brand-400 hover:text-brand-300 flex items-center justify-center gap-1 border-t border-slate-800 pt-3">
+                  {selectedGoalId === goal.id ? 'Hide' : 'Show'} Progress Chart <ChevronRight className="w-3 h-3" />
+                </button>
               </div>
             );
           })}
         </div>
-      </div>
+      )}
 
-      {/* Interactive SIP & Compound Interest Visualizer */}
-      <div className="p-6 sm:p-8 rounded-3xl bg-slate-900 border border-slate-800 shadow-xl space-y-8">
-        
-        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
-          <div>
-            <h3 className="text-lg font-bold text-white flex items-center gap-2">
-              <TrendingUp className="w-5 h-5 text-brand-400" /> Interactive SIP Compound Simulator
+      {/* Expanded Goal Progress Chart */}
+      {selectedGoal && (() => {
+        const analytics = calcGoalAnalytics(selectedGoal);
+        return (
+          <div className="p-6 rounded-3xl bg-slate-900 border border-slate-800 shadow-xl space-y-4 animate-fade-in">
+            <h3 className="text-sm font-bold text-white flex items-center gap-2">
+              <BarChart3 className="w-4 h-4 text-brand-400" />
+              {selectedGoal.icon} {selectedGoal.name} — Projected vs Target Timeline
             </h3>
-            <p className="text-xs text-slate-400">See the power of monthly compounding vs inflation over time</p>
+            <div className="h-56 w-full">
+              <ResponsiveContainer width="100%" height="100%">
+                <AreaChart data={analytics.monthlyProgressData} margin={{ top: 10, right: 10, left: 0, bottom: 0 }}>
+                  <defs>
+                    <linearGradient id="projGrad" x1="0" y1="0" x2="0" y2="1">
+                      <stop offset="5%" stopColor="#10b981" stopOpacity={0.3} />
+                      <stop offset="95%" stopColor="#10b981" stopOpacity={0} />
+                    </linearGradient>
+                  </defs>
+                  <CartesianGrid strokeDasharray="3 3" stroke="#1e293b" />
+                  <XAxis dataKey="month" stroke="#64748b" fontSize={10} />
+                  <YAxis stroke="#64748b" fontSize={10} tickFormatter={v => formatINR(v, true)} />
+                  <Tooltip contentStyle={{ backgroundColor: '#0f172a', borderColor: '#334155', borderRadius: '12px', fontSize: '11px' }}
+                    formatter={(v, n) => [formatINR(v), n === 'projected' ? 'SIP Projected' : 'Linear Target']} />
+                  <Area type="monotone" dataKey="projected" stroke="#10b981" strokeWidth={2.5} fillOpacity={1} fill="url(#projGrad)" />
+                  <Line type="monotone" dataKey="target" stroke="#f59e0b" strokeWidth={1.5} strokeDasharray="5 5" dot={false} />
+                </AreaChart>
+              </ResponsiveContainer>
+            </div>
           </div>
+        );
+      })()}
 
-          <div className="flex items-center gap-2 p-1 bg-slate-950 rounded-xl border border-slate-800">
-            <button
-              onClick={() => setCalculatorMode('sipToWealth')}
-              className={`px-3 py-1.5 text-xs font-semibold rounded-lg transition-all ${
-                calculatorMode === 'sipToWealth' ? 'bg-brand-500 text-slate-950' : 'text-slate-400'
-              }`}
-            >
-              SIP → Future Corpus
+      {/* Add / Edit Goal Modal */}
+      {showAddModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
+          <div className="w-full max-w-lg p-6 rounded-3xl bg-slate-900 border border-slate-800 shadow-2xl space-y-5 max-h-[90vh] overflow-y-auto">
+            <div className="flex justify-between items-center">
+              <h3 className="text-base font-bold text-white">{editingGoal ? 'Edit Goal' : 'Create New Goal'}</h3>
+              <button onClick={() => setShowAddModal(false)} className="p-1.5 rounded-lg hover:bg-slate-800 text-slate-400"><X className="w-4 h-4" /></button>
+            </div>
+
+            <div className="space-y-4">
+              <div>
+                <label className="text-xs text-slate-400 block mb-1">Goal Name</label>
+                <input type="text" value={formName} onChange={e => setFormName(e.target.value)} placeholder="e.g. Buy House Down Payment"
+                  className="w-full px-3 py-2.5 bg-slate-950 border border-slate-800 rounded-xl text-sm text-white focus:border-brand-500" />
+              </div>
+
+              <div>
+                <label className="text-xs text-slate-400 block mb-1">Icon</label>
+                <div className="flex flex-wrap gap-2">
+                  {iconOptions.map(ic => (
+                    <button key={ic} onClick={() => setFormIcon(ic)}
+                      className={`w-9 h-9 rounded-xl text-lg flex items-center justify-center transition-all ${formIcon === ic ? 'bg-brand-500/20 border-2 border-brand-500 scale-110' : 'bg-slate-950 border border-slate-800 hover:bg-slate-800'}`}>
+                      {ic}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="text-xs text-slate-400 block mb-1">Target Amount (₹)</label>
+                  <input type="number" value={formTarget} onChange={e => setFormTarget(Number(e.target.value))}
+                    className="w-full px-3 py-2 bg-slate-950 border border-slate-800 rounded-xl text-sm text-white font-mono focus:border-brand-500" />
+                </div>
+                <div>
+                  <label className="text-xs text-slate-400 block mb-1">Already Saved (₹)</label>
+                  <input type="number" value={formSaved} onChange={e => setFormSaved(Number(e.target.value))}
+                    className="w-full px-3 py-2 bg-slate-950 border border-slate-800 rounded-xl text-sm text-white font-mono focus:border-brand-500" />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-3 gap-3">
+                <div>
+                  <label className="text-xs text-slate-400 block mb-1">Monthly SIP (₹)</label>
+                  <input type="number" value={formMonthly} onChange={e => setFormMonthly(Number(e.target.value))}
+                    className="w-full px-3 py-2 bg-slate-950 border border-slate-800 rounded-xl text-sm text-white font-mono focus:border-brand-500" />
+                </div>
+                <div>
+                  <label className="text-xs text-slate-400 block mb-1">Timeline (Years)</label>
+                  <input type="number" value={formYears} onChange={e => setFormYears(Number(e.target.value))}
+                    className="w-full px-3 py-2 bg-slate-950 border border-slate-800 rounded-xl text-sm text-white font-mono focus:border-brand-500" />
+                </div>
+                <div>
+                  <label className="text-xs text-slate-400 block mb-1">Return (%)</label>
+                  <input type="number" step="0.5" value={formReturn} onChange={e => setFormReturn(Number(e.target.value))}
+                    className="w-full px-3 py-2 bg-slate-950 border border-slate-800 rounded-xl text-sm text-white font-mono focus:border-brand-500" />
+                </div>
+              </div>
+
+              <div>
+                <label className="text-xs text-slate-400 block mb-1">Priority</label>
+                <div className="flex gap-2">
+                  {priorityOptions.map(p => (
+                    <button key={p} onClick={() => setFormPriority(p)}
+                      className={`px-3 py-1.5 rounded-xl text-xs font-semibold transition-all ${formPriority === p ? 'bg-brand-500 text-slate-950' : 'bg-slate-950 border border-slate-800 text-slate-400'}`}>
+                      {p}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            </div>
+
+            <button onClick={handleSaveGoal}
+              className="w-full py-3 bg-brand-500 hover:bg-brand-400 text-slate-950 font-bold rounded-xl flex items-center justify-center gap-2">
+              <Save className="w-4 h-4" /> {editingGoal ? 'Save Changes' : 'Create Goal & Start Tracking'}
             </button>
-            <button
-              onClick={() => setCalculatorMode('targetToSIP')}
-              className={`px-3 py-1.5 text-xs font-semibold rounded-lg transition-all ${
-                calculatorMode === 'targetToSIP' ? 'bg-brand-500 text-slate-950' : 'text-slate-400'
-              }`}
-            >
-              Target Corpus → Required SIP
-            </button>
           </div>
         </div>
-
-        {/* Sliders Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 p-6 rounded-2xl bg-slate-950 border border-slate-800">
-          
-          {/* Slider 1: Monthly Investment or Target */}
-          {calculatorMode === 'sipToWealth' ? (
-            <div className="space-y-2">
-              <div className="flex justify-between text-xs">
-                <span className="font-semibold text-slate-300">Monthly SIP Amount</span>
-                <span className="font-bold text-brand-400 font-mono text-sm">{formatINR(monthlySIP)}</span>
-              </div>
-              <input
-                type="range"
-                min="1000"
-                max="100000"
-                step="1000"
-                value={monthlySIP}
-                onChange={(e) => setMonthlySIP(Number(e.target.value))}
-                className="w-full accent-emerald-500 cursor-pointer"
-              />
-              <div className="flex justify-between text-[10px] text-slate-500">
-                <span>₹1,000</span>
-                <span>₹50,000</span>
-                <span>₹1,00,000</span>
-              </div>
-            </div>
-          ) : (
-            <div className="space-y-2">
-              <div className="flex justify-between text-xs">
-                <span className="font-semibold text-slate-300">Target Wealth Corpus</span>
-                <span className="font-bold text-brand-400 font-mono text-sm">{formatINR(targetAmount)}</span>
-              </div>
-              <input
-                type="range"
-                min="500000"
-                max="50000000"
-                step="500000"
-                value={targetAmount}
-                onChange={(e) => setTargetAmount(Number(e.target.value))}
-                className="w-full accent-emerald-500 cursor-pointer"
-              />
-              <div className="flex justify-between text-[10px] text-slate-500">
-                <span>₹5 Lakhs</span>
-                <span>₹2.5 Cr</span>
-                <span>₹5 Crores</span>
-              </div>
-            </div>
-          )}
-
-          {/* Slider 2: Horizon (Years) */}
-          <div className="space-y-2">
-            <div className="flex justify-between text-xs">
-              <span className="font-semibold text-slate-300">Investment Horizon</span>
-              <span className="font-bold text-indigo-300 font-mono text-sm">{years} Years</span>
-            </div>
-            <input
-              type="range"
-              min="1"
-              max="30"
-              step="1"
-              value={years}
-              onChange={(e) => setYears(Number(e.target.value))}
-              className="w-full accent-indigo-500 cursor-pointer"
-            />
-            <div className="flex justify-between text-[10px] text-slate-500">
-              <span>1 yr</span>
-              <span>15 yrs</span>
-              <span>30 yrs</span>
-            </div>
-          </div>
-
-          {/* Slider 3: Expected CAGR Return Rate */}
-          <div className="space-y-2">
-            <div className="flex justify-between text-xs">
-              <span className="font-semibold text-slate-300">Expected Annual CAGR</span>
-              <span className="font-bold text-amber-400 font-mono text-sm">{expectedReturn}%</span>
-            </div>
-            <input
-              type="range"
-              min="7"
-              max="18"
-              step="0.5"
-              value={expectedReturn}
-              onChange={(e) => setExpectedReturn(Number(e.target.value))}
-              className="w-full accent-amber-500 cursor-pointer"
-            />
-            <div className="flex justify-between text-[10px] text-slate-500">
-              <span>7% (FD/Debt)</span>
-              <span>13% (Nifty Index)</span>
-              <span>18% (High Equity)</span>
-            </div>
-          </div>
-
-        </div>
-
-        {/* Output Metrics Bar */}
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-          
-          <div className="p-4 rounded-2xl bg-slate-950 border border-slate-800 space-y-1">
-            <span className="text-[11px] text-slate-400 font-semibold uppercase">Total Invested Principal</span>
-            <p className="text-xl font-bold text-slate-200 font-mono">
-              {formatINR(sipResult.totalInvested)}
-            </p>
-            <span className="text-[10px] text-slate-500">₹{monthlySIP.toLocaleString('en-IN')} × {years * 12} months</span>
-          </div>
-
-          <div className="p-4 rounded-2xl bg-slate-950 border border-brand-500/30 space-y-1">
-            <span className="text-[11px] text-brand-400 font-semibold uppercase">Estimated Future Corpus</span>
-            <p className="text-2xl font-black text-brand-400 font-mono">
-              {formatINR(sipResult.totalValue)}
-            </p>
-            <span className="text-[10px] text-brand-300/80 font-semibold">
-              Gain: +{formatINR(sipResult.estimatedReturns)} ({Math.round((sipResult.estimatedReturns / (sipResult.totalInvested || 1)) * 100)}%)
-            </span>
-          </div>
-
-          <div className="p-4 rounded-2xl bg-slate-950 border border-slate-800 space-y-1">
-            <div className="flex items-center justify-between">
-              <span className="text-[11px] text-slate-400 font-semibold uppercase">Real Purchasing Power</span>
-              <span className="text-[10px] px-1.5 py-0.5 rounded bg-slate-800 text-slate-300">@ 6% Inflation</span>
-            </div>
-            <p className="text-xl font-bold text-indigo-300 font-mono">
-              {formatINR(realPurchasingPower)}
-            </p>
-            <span className="text-[10px] text-slate-400">Equivalent to today's buying power</span>
-          </div>
-
-        </div>
-
-        {/* Growth Area Chart */}
-        <div className="space-y-2">
-          <div className="flex justify-between items-center text-xs text-slate-400">
-            <span>Compounding Trajectory Over {years} Years</span>
-            <div className="flex items-center gap-4 text-[11px]">
-              <span className="flex items-center gap-1"><span className="w-2.5 h-2.5 rounded-full bg-slate-500"></span> Principal Invested</span>
-              <span className="flex items-center gap-1"><span className="w-2.5 h-2.5 rounded-full bg-brand-400"></span> Total Wealth Growth</span>
-            </div>
-          </div>
-
-          <div className="h-64 w-full pt-2">
-            <ResponsiveContainer width="100%" height="100%">
-              <AreaChart data={sipResult.yearlyBreakdown} margin={{ top: 10, right: 10, left: 0, bottom: 0 }}>
-                <defs>
-                  <linearGradient id="totalGrad" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="5%" stopColor="#10b981" stopOpacity={0.4}/>
-                    <stop offset="95%" stopColor="#10b981" stopOpacity={0.0}/>
-                  </linearGradient>
-                  <linearGradient id="investedGrad" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="5%" stopColor="#64748b" stopOpacity={0.3}/>
-                    <stop offset="95%" stopColor="#64748b" stopOpacity={0.0}/>
-                  </linearGradient>
-                </defs>
-                <CartesianGrid strokeDasharray="3 3" stroke="#1e293b" />
-                <XAxis dataKey="year" stroke="#64748b" fontSize={11} />
-                <YAxis stroke="#64748b" fontSize={11} tickFormatter={(v) => formatINR(v, true)} />
-                <Tooltip
-                  formatter={(val, name) => [formatINR(val), name === 'total' ? 'Total Portfolio Value' : 'Principal Invested']}
-                  contentStyle={{ backgroundColor: '#0f172a', borderColor: '#334155', borderRadius: '12px', fontSize: '12px' }}
-                />
-                <Area type="monotone" dataKey="total" stroke="#10b981" strokeWidth={2.5} fillOpacity={1} fill="url(#totalGrad)" />
-                <Area type="monotone" dataKey="invested" stroke="#64748b" strokeWidth={2} fillOpacity={1} fill="url(#investedGrad)" />
-              </AreaChart>
-            </ResponsiveContainer>
-          </div>
-        </div>
-
-      </div>
-
+      )}
     </div>
   );
 };

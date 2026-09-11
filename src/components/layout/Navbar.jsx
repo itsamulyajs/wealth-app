@@ -39,7 +39,7 @@ export const Navbar = ({ activeTab, setActiveTab, onOpenArthAI }) => {
     { id: 'markets', label: 'Markets & Assets', icon: Coins },
     { id: 'risk', label: 'Risk Profiler', icon: ShieldCheck },
     { id: 'goals', label: 'Goal SIP Simulator', icon: Target },
-    { id: 'literacy', label: 'Hype vs Reality', icon: Flame },
+    { id: 'literacy', label: 'Claim Validator & Insights', icon: ShieldCheck },
     { id: 'advisor', label: 'ArthAI Assistant', icon: Bot, highlight: true },
   ];
 
