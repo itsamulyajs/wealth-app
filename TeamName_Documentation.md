@@ -2,88 +2,83 @@
 
 **Team Name:** [Your Team Name]  
 **Track:** Track 1 - WealthTech & Investment Solutions  
-**Project Name:** ArthSaathi 2.0 | Intelligent Indian WealthTech, Travel Budgeting & Market Intelligence Platform  
+**Project Name:** ArthSaathi 2.0 | Intelligent Indian WealthTech, Multi-Asset Risk Intelligence & Market Truth Validator  
 **Live Hosted Website:** [Insert your deployed Netlify/Vercel link here]  
 **GitHub Repository Link:** [Insert your GitHub repo link here]  
 **Demo Video Link:** [Insert your YouTube / Google Drive public recording link here]  
 
 ---
 
-## 1. Executive Summary & Solution to Problem Statement (150–200 Words)
+## 1. Executive Summary & Solution to Problem Statement
 
-Financial literacy in India has grown rapidly with soaring retail investor participation in equity markets and mutual funds. However, **genuine financial confidence remains notably low**. College students and young earners start Systematic Investment Plans (SIPs) without comprehending risk horizons, professionals struggle with fragmented investments scattered across Zerodha, Groww, bank fixed deposits, EPF/PPF, and Sovereign Gold Bonds, and first-time investors frequently fall for viral social media hype rather than data-driven principles.
+Financial literacy in India has expanded rapidly with soaring retail participation in equities, mutual funds, and digital assets. However, **genuine financial confidence and risk literacy remain low**. Young earners start SIPs without comprehending drawdowns, professionals have fragmented investments across Zerodha, Groww, bank fixed deposits, EPF/PPF, and Sovereign Gold Bonds, and millions fall victim to viral social media hype, Telegram pump-and-dump tips, and toxic bundled insurance products.
 
-**ArthSaathi 2.0** bridges this confidence deficit through an innovative, user-centric web platform that converts complex financial and market volatility into clear, personalized, and actionable insights. The platform features:
-1. **Interactive Indian Risk Profiler**: Evaluates psychological and horizon-based risk capacity to recommend balanced asset allocations (Equity, Debt, Gold, Cash).
-2. **Unified Multi-Asset Portfolio Dashboard**: Aggregates scattered holdings into a single view with a dynamic **Portfolio Health & Diversification Score** that detects dangerous concentration traps.
-3. **Goal-Based SIP & Wealth Simulator**: Visualizes compound growth and calculates precise monthly SIP commitments adjusted for India's ~6% inflation.
-4. **"Hype vs Reality" FinLiteracy Hub**: Exposes dangerous social media myths (such as F&O get-rich-quick claims) using official SEBI data and mathematical facts.
-5. **ArthAI 2.0 Multi-Domain Advisor**: An upgraded conversational AI assistant providing deep guidance across **Personal Finance & Savings Timelines**, **Travel & Vacation Cost Breakdown**, **Live Stock Market Trends (Nifty 50, Bluechips)**, and **Real-Time Currency Conversions**.
-
----
-
-## 2. ArthAI 2.0 Upgraded Capability Pillars
-
-### 💰 Pillar 1: Personal Finance & Savings Planning
-* **Goal Timeline Engine**: Computes exact timelines to save for major purchases (e.g. MacBook Pro, flagship smartphone, wedding budget, car down payment) across Steady (₹5K/mo), Balanced (₹10K/mo), and Aggressive (₹20K/mo) tiers.
-* **Custom Budgeting Strategies**: Integrates the 50-30-20 rule dynamically mapped to user's take-home salary.
-
-### ✈️ Pillar 2: Travel & Vacation Financial Planning
-* **Complete Cost Breakdowns**: Estimates round-trip flights, accommodation, food, and local activity costs for destinations (Goa, Bali, Dubai, Thailand, Manali).
-* **Budget Explorer vs Luxury Comfort Tiers**: Compares accessible vs premium vacation tiers.
-* **Actionable Day-by-Day Itineraries**: Provides structured daily itineraries tailored to financial budgets.
-* **Weather & Best Season Advisor**: Recommends optimal travel months and climate conditions.
-
-### 📈 Pillar 3: Stock Market & Investment Advice
-* **Live Market Intelligence**: Real-time prices, percentage shifts, and technical trends for Nifty 50, BSE Sensex, Reliance, TCS, HDFC Bank, Infosys, Tata Motors, and ITC.
-* **Valuation & Fundamentals (P/E Ratios)**: Explains Price-to-Earnings ratios, historical medians, and market cap classifications.
-* **Strategic Signals**: Recommends DCA / Rupee Cost Averaging vs Lumpsum strategies.
-
-### 💱 Pillar 4: Real-Time Currency & Forex Engine
-* **Instant Currency Conversion**: Converts INR into USD ($), EUR (€), GBP (£), AED (د.إ), THB (฿), IDR (Rp), and JPY (¥).
-* **Live Exchange Rates Ticker**: Interactive real-time converter right inside the chat interface.
+**ArthSaathi 2.0** bridges this confidence deficit through an institutional-grade, user-centric web platform:
+1. **🌌 3D Futuristic Moving Animated Login Portal**: HTML5 canvas particle constellation and animated financial ticker cards with 1-click demo persona onboarding.
+2. **🛡️ 8-Pillar Advanced Risk Intelligence Engine**: Computes personalized risk scores (1-10), financial health scores (0-100), emergency fund adequacy (3-6 month rule), peer benchmark comparisons against Indian age peers, 5-20 year scenario projections (Bear 7%, Realistic 12.5%, Bull 16%), and adaptive life event simulations.
+3. **📊 Multi-Period Visual Portfolio & Wealth Analytics**: Monthly (week-by-week), Financial Year (seasonal patterns & YoY), and Custom Range views with 6 interactive Recharts visualizers and **direct manual editing & saving of balances**.
+4. **🎯 Goal SIP Simulator with Real-Time Progress Tracking**: Unlimited goal tracking, milestone pace indicators (Ahead, Slightly Behind, Significantly Behind), inline savings updater, and instant **What-If simulation** for changing SIP, return %, and timelines.
+5. **🔍 Market Insights & Claim Verification ("Smart Investment Validator")**: Interactive claim analyzer testing viral claims against historical data, SEBI studies, statistical probabilities, and reality checks, alongside Stock Hype comparisons, Viral Trends statistics (F&O, Crypto, Pre-launch real estate), and Market Psychology breakdowns (FOMO, Survivorship Bias, Loss Aversion).
+6. **🤖 ArthAI 2.0 Multi-Domain Advisor**: Multi-turn conversational AI across Personal Finance, Savings Timelines, Travel & Vacation Budgeting, Live Stock Market Intelligence, and Real-Time Currency Conversion.
 
 ---
 
-## 3. Implemented Prompts in ArthAI 2.0
+## 2. Core Architectural Modules
 
-Below are the key prompts implemented in the ArthAI 2.0 conversational advisor:
+### 🌌 Module 1: 3D Animated Hero & Multi-Step Financial Onboarding
+- **Particle Constellation Canvas**: 65 dynamic nodes with proximity-based line rendering.
+- **Floating Live Financial Tickers**: Nifty 50 live feed, SIP Compounding power metrics, Risk DNA, and ArthAI status.
+- **4-Step Onboarding Wizard**: Demographics, income sources (salary, stipend, scholarships, freelance), savings capacity, and investment interests.
+- **Instant Demo Personas**: Aarav (21y College Student & Intern), Priya (27y IT Professional), and Rajesh (45y Senior Manager & Parent).
 
-1. **Savings Goal & Item Purchase Timeline**:
-   * *Prompt*: `"How long will it take to save ₹1,50,000 for a new MacBook?"`
-   * *Implementation*: Computes 3 savings tiers (₹5K/mo, ₹10K/mo, ₹20K/mo), timeline in months, and recommended liquid fund strategies.
+### 🛡️ Module 2: 8-Pillar Risk Intelligence Engine
+- **Risk Profiling (1-10)**: Evaluates psychological tolerance and time horizons.
+- **Emergency Fund Coverage**: 3-6 month living expenses adequacy test.
+- **Multi-Asset Deep Analysis**: Detailed volatility, inflation resistance, and liquidity breakdown across Equities, Debt, Gold, Cash, and Crypto.
+- **Peer Benchmark Comparisons**: Compares user's equity/savings ratios against Indian age-group averages.
+- **Adaptive Life Event Triggers**: Live simulation of Marriage, Job Switch, Home Purchase, and 30% Market Crash.
 
-2. **International Travel & Vacation Cost Breakdown**:
-   * *Prompt*: `"Plan a 5-day budget trip to Bali from India with cost breakdown"`
-   * *Implementation*: Breaks down flights (₹28K), stay (₹14K), food (₹10K), and activities (₹9K), with weather advice, currency rates, and 6-day itinerary.
+### 📊 Module 3: Visual Output with Time Period Selection & Manual Edit/Save
+- **Time Periods**: Monthly (Week-by-Week), Financial Year (Quarterly Seasonal Patterns & YoY), and Custom Range.
+- **6 Visual Output Charts**:
+  1. *Wealth Growth Trajectory* (AreaChart with SIP contribution overlays).
+  2. *Asset Allocation Pie* (Current vs. Target Ideal Yearly Allocation toggle).
+  3. *Risk vs. Return Matrix* (BarChart comparing expected CAGR vs. volatility score with Sharpe analysis).
+  4. *Scenario Comparison Projections* (Bear 5%, Base 12.5%, Bull 18% lines).
+  5. *Financial Health Timeline* (Emergency fund coverage, savings rate %, debt load).
+  6. *Consolidated Holdings Breakdown* (Active holdings with 1-click management).
+- **Manual Edit Drawer**: Allows users to manually modify individual asset balances (Equity, Debt, Gold, Cash, Crypto) with instant auto-save and live chart updates.
 
-3. **Domestic Vacation Planning**:
-   * *Prompt*: `"What is the total estimated cost for a 4-day Goa vacation?"`
-   * *Implementation*: Compares budget tier (₹21K) vs luxury tier (₹79K) with day-by-day sightseeing plans.
+### 🎯 Module 4: Goal SIP Simulator & Progress Tracker
+- **Comprehensive Goal Setup**: Target amount, current savings, monthly SIP, return %, priority ranking (Critical, High, Medium, Low), and icon customization.
+- **Progress Tracking & Pace Analysis**: Real-time evaluation (Ahead of Pace / Slightly Behind / Significantly Behind) with actionable Rupee adjustments.
+- **What-If Sandbox**: Instant simulation of alternative monthly SIP amounts, interest rates, and time horizons.
+- **Projected vs. Target Charts**: Interactive AreaChart showing compounding trajectory vs linear target benchmark.
 
-4. **Live Stock Market Trends & Index Analysis**:
-   * *Prompt*: `"What are the live prices & trends of Nifty 50, Reliance and TCS?"`
-   * *Implementation*: Renders live price feeds, P/E metrics, technical momentum, and long-term hold/buy strategic recommendations.
+### 🔍 Module 5: Market Insights & Claim Verification ("Smart Investment Validator")
+- **Part A: Interactive Claim Verification Space**:
+  - Accepts any user-entered text or pre-loaded viral claims (Bitcoin $100k, 10x Penny Stock, 20% Guaranteed MF, ₹50k F&O Trading, Real Estate Never Drops).
+  - Evaluates Claim Status (Partially True, Misleading, False/Exaggerated, Unverifiable) and calculates statistical probability.
+  - Deconstructs Evidence, Reality Checks (Who profits? Has this happened before? What's missing?), Hidden Risks, and Lower-Risk Alternatives.
+- **Part B: Built-in Market Intelligence**:
+  - *Stock Hype Check*: Media narrative vs. fundamental reality (P/E, revenue, profit, debt) for Tata Motors, Zomato, Suzlon, HDFC Bank.
+  - *Viral Trends Reality Check*: Empirical data on F&O (92.9% loss rate), Meme Coins (99.2% failure rate), Pre-launch properties, and Telegram bots.
+  - *Financial Product Truths*: Exposing toxic bundled ULIPs, traditional endowment policies, and dividend traps.
+  - *Market Psychology*: Deep dives into FOMO, Survivorship Bias, Loss Aversion, and Recency Bias.
 
-5. **Financial Valuation Concepts Explained**:
-   * *Prompt*: `"Explain PE Ratio and Market Cap in simple terms with examples"`
-   * *Implementation*: Demystifies valuation metrics with practical examples (large-cap, mid-cap, small-cap risk levels).
-
-6. **Real-Time Currency Conversion**:
-   * *Prompt*: `"Convert ₹50,000 to USD, EUR, and Thai Baht"`
-   * *Implementation*: Displays live converted amounts in USD, EUR, GBP, AED, THB, and IDR with international fee avoidance tips.
-
-7. **Tax Regime Optimization**:
-   * *Prompt*: `"Explain Old Tax Regime vs New Tax Regime for salaried people"`
-   * *Implementation*: Compares tax slabs, ₹75,000 standard deductions, and the ₹3.75L deduction breakeven rule.
+### 🤖 Module 6: ArthAI 2.0 Multi-Domain Advisor
+- **Domain 1**: Personal Finance & Savings Goal Timelines.
+- **Domain 2**: International & Domestic Travel Budgeting with day-by-day itineraries and weather advice.
+- **Domain 3**: Live Stock Market Trends, P/E Valuations, and Technical Signals.
+- **Domain 4**: Real-Time Multi-Currency Forex Engine (USD, EUR, GBP, AED, THB, IDR, JPY).
+- **Domain 5**: 8-Part Comprehensive Risk Profile Markdown Report generation.
 
 ---
 
-## 4. Technical Stack & Deployment
+## 3. Technical Stack & Deployment
 
-* **Frontend Framework**: React 18 (Vite)
-* **Styling**: Tailwind CSS, PostCSS, Lucide React Icons
-* **Data Visualization**: Recharts (Interactive Pie, Area & Stock Charts)
-* **Gamification & Delighters**: Canvas Confetti
-* **Architecture**: React Context API (`AuthContext`, `PortfolioContext`), Client-Side LocalStorage Persistence
-* **Build & Hosting**: Vite production build (`dist/`), compatible with Netlify, Vercel, and GitHub Pages
+* **Frontend Framework**: React 18 (Vite 8.2)
+* **Styling**: Tailwind CSS v4, PostCSS, Glassmorphism, Lucide React Icons
+* **Data Visualization**: Recharts (Pie, Area, Bar, Line, Scatter Charts)
+* **Architecture**: React Context API (`AuthContext`, `PortfolioContext`), HTML5 Canvas, Client-Side LocalStorage Persistence
+* **Build & Hosting**: Vite production build (`dist/`), pre-configured for Vercel (`vercel.json`) and Netlify (`_redirects`)
