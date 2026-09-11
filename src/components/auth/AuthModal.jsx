@@ -2,19 +2,9 @@ import React, { useState } from 'react';
 import { useAuth } from '../../context/AuthContext';
 import { formatINR } from '../../utils/financeCalculators';
 import { 
-  X, 
-  Lock, 
-  Mail, 
-  User, 
-  IndianRupee, 
-  Eye, 
-  EyeOff, 
-  ArrowRight, 
-  Sparkles, 
-  ShieldCheck, 
-  GraduationCap, 
-  Briefcase, 
-  Users 
+  X, Lock, Mail, User, IndianRupee, Eye, EyeOff, ArrowRight,
+  Sparkles, ShieldCheck, GraduationCap, Briefcase, Users, Database,
+  CheckCircle2, AlertCircle, RefreshCw, KeyRound, ExternalLink
 } from 'lucide-react';
 
 export const AuthModal = () => {
@@ -26,7 +16,11 @@ export const AuthModal = () => {
     login, 
     register, 
     switchPersona, 
-    personas 
+    personas,
+    supabaseActive,
+    supabaseConfig,
+    updateSupabaseCredentials,
+    authLoading
   } = useAuth();
 
   const [email, setEmail] = useState('');
@@ -37,9 +31,14 @@ export const AuthModal = () => {
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
 
+  // Supabase Settings form state
+  const [sbUrl, setSbUrl] = useState(supabaseConfig?.supabaseUrl || '');
+  const [sbKey, setSbKey] = useState(supabaseConfig?.supabaseAnonKey || '');
+  const [sbSuccessMsg, setSbSuccessMsg] = useState('');
+
   if (!authModalOpen) return null;
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
     setError('');
 
@@ -49,10 +48,11 @@ export const AuthModal = () => {
         return;
       }
       setLoading(true);
-      setTimeout(() => {
-        login(email, password);
-        setLoading(false);
-      }, 400);
+      const res = await login(email, password);
+      setLoading(false);
+      if (res?.error) {
+        setError(res.error);
+      }
     } else if (authMode === 'register') {
       if (!name || !email || !password) {
         setError('Please fill in all required fields.');
@@ -63,15 +63,26 @@ export const AuthModal = () => {
         return;
       }
       setLoading(true);
-      setTimeout(() => {
-        register(name, email, password, monthlyIncome);
-        setLoading(false);
-      }, 400);
+      const res = await register(name, email, password, monthlyIncome);
+      setLoading(false);
+      if (res?.error) {
+        setError(res.error);
+      }
     }
   };
 
+  const handleSaveSupabase = (e) => {
+    e.preventDefault();
+    updateSupabaseCredentials(sbUrl, sbKey);
+    setSbSuccessMsg('Supabase credentials saved successfully!');
+    setTimeout(() => {
+      setSbSuccessMsg('');
+      setAuthMode('login');
+    }, 1200);
+  };
+
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-md animate-fade-in">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/85 backdrop-blur-md animate-fade-in">
       <div className="relative w-full max-w-xl bg-slate-900 border border-slate-800 rounded-3xl shadow-2xl overflow-hidden p-6 sm:p-8 animate-slide-up">
         
         {/* Close Button */}
@@ -82,8 +93,24 @@ export const AuthModal = () => {
           <X className="w-5 h-5" />
         </button>
 
+        {/* Supabase Status Indicator Badge */}
+        <div className="flex items-center justify-between mb-4 pb-3 border-b border-slate-800/70">
+          <div className="flex items-center gap-2 text-xs">
+            <Database className={`w-3.5 h-3.5 ${supabaseActive ? 'text-emerald-400' : 'text-slate-500'}`} />
+            <span className={supabaseActive ? 'text-emerald-400 font-semibold' : 'text-slate-400 font-medium'}>
+              {supabaseActive ? 'Supabase PostgreSQL Cloud Active' : 'Supabase Auth Ready (Local / Cloud Hybrid)'}
+            </span>
+          </div>
+          <button
+            onClick={() => { setAuthMode(authMode === 'supabase_settings' ? 'login' : 'supabase_settings'); setError(''); }}
+            className="text-[11px] text-brand-400 hover:text-brand-300 font-semibold flex items-center gap-1"
+          >
+            <KeyRound className="w-3 h-3" /> {authMode === 'supabase_settings' ? 'Back to Login' : 'Supabase Config'}
+          </button>
+        </div>
+
         {/* Header Tabs */}
-        <div className="flex items-center justify-center gap-2 mb-6 p-1 bg-slate-950/80 rounded-2xl border border-slate-800/80 max-w-md mx-auto">
+        <div className="flex items-center justify-center gap-1.5 mb-6 p-1 bg-slate-950/80 rounded-2xl border border-slate-800/80 max-w-md mx-auto">
           <button
             onClick={() => { setAuthMode('login'); setError(''); }}
             className={`flex-1 py-2 text-xs font-semibold rounded-xl transition-all ${
@@ -102,7 +129,7 @@ export const AuthModal = () => {
                 : 'text-slate-400 hover:text-slate-200'
             }`}
           >
-            Create Account
+            Register
           </button>
           <button
             onClick={() => { setAuthMode('persona'); setError(''); }}
@@ -112,85 +139,124 @@ export const AuthModal = () => {
                 : 'text-slate-400 hover:text-slate-200'
             }`}
           >
-            ⚡ 1-Click Demos
+            ⚡ Demos
           </button>
         </div>
 
-        {/* Mode 1: 1-Click Persona Demos */}
+        {/* Mode 1: Supabase Cloud Database Configuration */}
+        {authMode === 'supabase_settings' && (
+          <div className="space-y-4 animate-fade-in">
+            <div className="text-center mb-4">
+              <h3 className="text-base font-bold text-white flex items-center justify-center gap-2">
+                <Database className="w-5 h-5 text-emerald-400" />
+                Connect Your Supabase Project
+              </h3>
+              <p className="text-xs text-slate-400 mt-1">
+                Enter your Supabase Project URL and Anon API Key from your Supabase Dashboard.
+              </p>
+            </div>
+
+            {sbSuccessMsg && (
+              <div className="p-3 rounded-xl bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 text-xs text-center flex items-center justify-center gap-2">
+                <CheckCircle2 className="w-4 h-4" /> {sbSuccessMsg}
+              </div>
+            )}
+
+            <form onSubmit={handleSaveSupabase} className="space-y-3">
+              <div>
+                <label className="block text-xs font-semibold text-slate-300 mb-1">Supabase Project URL</label>
+                <input
+                  type="text"
+                  placeholder="https://your-project.supabase.co"
+                  value={sbUrl}
+                  onChange={e => setSbUrl(e.target.value)}
+                  className="w-full px-3.5 py-2.5 bg-slate-950 border border-slate-800 rounded-xl text-xs text-white font-mono focus:border-brand-500"
+                />
+              </div>
+
+              <div>
+                <label className="block text-xs font-semibold text-slate-300 mb-1">Supabase Anon Public API Key</label>
+                <input
+                  type="password"
+                  placeholder="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
+                  value={sbKey}
+                  onChange={e => setSbKey(e.target.value)}
+                  className="w-full px-3.5 py-2.5 bg-slate-950 border border-slate-800 rounded-xl text-xs text-white font-mono focus:border-brand-500"
+                />
+              </div>
+
+              <button
+                type="submit"
+                className="w-full py-2.5 bg-brand-500 hover:bg-brand-400 text-slate-950 text-xs font-bold rounded-xl shadow-lg transition-all"
+              >
+                Save & Connect Supabase
+              </button>
+            </form>
+
+            <div className="p-3 rounded-xl bg-slate-950 border border-slate-800 text-[11px] text-slate-400">
+              💡 <strong>Environment Variables:</strong> You can also define <code>VITE_SUPABASE_URL</code> and <code>VITE_SUPABASE_ANON_KEY</code> in your <code>.env</code> file.
+            </div>
+          </div>
+        )}
+
+        {/* Mode 2: 1-Click Persona Demos */}
         {authMode === 'persona' && (
-          <div className="space-y-4">
+          <div className="space-y-4 animate-fade-in">
             <div className="text-center mb-4">
               <h3 className="text-lg font-bold text-white flex items-center justify-center gap-2">
                 <Sparkles className="w-5 h-5 text-amber-400" />
                 Select an Indian Investor Persona
               </h3>
               <p className="text-xs text-slate-400 mt-1">
-                Explore ArthSaathi instantly with real-world financial profiles, portfolios, and goals.
+                Explore ArthSaathi instantly with pre-loaded financial profiles, portfolios, and goals.
               </p>
             </div>
 
             <div className="space-y-3">
-              {personas.map((p) => {
-                const getIcon = () => {
-                  if (p.id.includes('student')) return <GraduationCap className="w-5 h-5 text-amber-400" />;
-                  if (p.id.includes('tech')) return <Briefcase className="w-5 h-5 text-indigo-400" />;
-                  return <Users className="w-5 h-5 text-emerald-400" />;
-                };
-
-                return (
-                  <div
-                    key={p.id}
-                    onClick={() => switchPersona(p.id)}
-                    className="p-4 rounded-2xl bg-slate-950/60 border border-slate-800 hover:border-brand-500/50 hover:bg-slate-800/40 cursor-pointer transition-all flex items-center justify-between group"
-                  >
-                    <div className="flex items-center gap-3.5">
-                      <img
-                        src={p.avatar}
-                        alt={p.name}
-                        className="w-12 h-12 rounded-xl object-cover ring-2 ring-slate-700 group-hover:ring-brand-400 transition-all"
-                      />
-                      <div>
-                        <div className="flex items-center gap-2">
-                          <h4 className="text-sm font-bold text-white group-hover:text-brand-300 transition-colors">
-                            {p.name}
-                          </h4>
-                          <span className="text-[10px] px-2 py-0.5 rounded-full bg-slate-800 text-slate-300">
-                            Age {p.age}
-                          </span>
-                        </div>
-                        <p className="text-xs text-slate-400">{p.title} • {p.city}</p>
-                        <div className="flex items-center gap-3 mt-1.5 text-[11px] text-slate-300">
-                          <span>Income: <strong className="text-emerald-400">{formatINR(p.monthlyIncome)}/mo</strong></span>
-                          <span>•</span>
-                          <span>Net Worth: <strong className="text-indigo-300">{formatINR(p.netWorth, true)}</strong></span>
-                        </div>
+              {personas.map((p) => (
+                <div
+                  key={p.id}
+                  onClick={() => switchPersona(p.id)}
+                  className="p-4 rounded-2xl bg-slate-950/60 border border-slate-800 hover:border-brand-500/50 hover:bg-slate-800/40 cursor-pointer transition-all flex items-center justify-between group"
+                >
+                  <div className="flex items-center gap-3.5">
+                    <img
+                      src={p.avatar}
+                      alt={p.name}
+                      className="w-12 h-12 rounded-xl object-cover ring-2 ring-slate-700 group-hover:ring-brand-400 transition-all"
+                    />
+                    <div>
+                      <div className="flex items-center gap-2">
+                        <h4 className="text-sm font-bold text-white group-hover:text-brand-300 transition-colors">
+                          {p.name}
+                        </h4>
+                        <span className="text-[10px] px-2 py-0.5 rounded-full bg-slate-800 text-slate-300">
+                          Age {p.age}
+                        </span>
+                      </div>
+                      <p className="text-xs text-slate-400">{p.title} • {p.city}</p>
+                      <div className="flex items-center gap-3 mt-1.5 text-[11px] text-slate-300">
+                        <span>Income: <strong className="text-emerald-400">{formatINR(p.monthlyIncome)}/mo</strong></span>
+                        <span>•</span>
+                        <span>Net Worth: <strong className="text-indigo-300">{formatINR(p.netWorth, true)}</strong></span>
                       </div>
                     </div>
-
-                    <div className="flex items-center gap-2">
-                      <span className="text-xs font-semibold text-brand-400 group-hover:translate-x-1 transition-transform flex items-center gap-1">
-                        Select <ArrowRight className="w-3.5 h-3.5" />
-                      </span>
-                    </div>
                   </div>
-                );
-              })}
-            </div>
 
-            <div className="pt-2 text-center">
-              <button
-                onClick={() => setAuthMode('login')}
-                className="text-xs text-slate-400 hover:text-slate-300 underline"
-              >
-                Or sign in with custom credentials
-              </button>
+                  <div className="flex items-center gap-2">
+                    <span className="text-xs font-semibold text-brand-400 group-hover:translate-x-1 transition-transform flex items-center gap-1">
+                      Select <ArrowRight className="w-3.5 h-3.5" />
+                    </span>
+                  </div>
+                </div>
+              ))}
             </div>
           </div>
         )}
 
-        {/* Mode 2: Standard Login & Register Form */}
-        {authMode !== 'persona' && (
-          <div>
+        {/* Mode 3: Standard Login & Register Form */}
+        {(authMode === 'login' || authMode === 'register') && (
+          <div className="animate-fade-in">
             <div className="text-center mb-6">
               <h3 className="text-xl font-bold text-white">
                 {authMode === 'login' ? 'Welcome Back to ArthSaathi' : 'Begin Your Wealth Journey'}
@@ -286,10 +352,10 @@ export const AuthModal = () => {
 
               <button
                 type="submit"
-                disabled={loading}
+                disabled={loading || authLoading}
                 className="w-full py-3 px-4 bg-brand-500 hover:bg-brand-400 text-slate-950 font-bold rounded-xl shadow-lg shadow-brand-500/20 transition-all flex items-center justify-center gap-2 mt-2"
               >
-                {loading ? (
+                {loading || authLoading ? (
                   <span className="inline-block w-4 h-4 border-2 border-slate-950 border-t-transparent rounded-full animate-spin"></span>
                 ) : (
                   <>

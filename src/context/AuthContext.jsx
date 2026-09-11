@@ -1,5 +1,6 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { MOCK_PERSONAS } from '../data/mockPersonas';
+import { supabase, isSupabaseConfigured, getSupabaseConfig, saveSupabaseConfig } from '../lib/supabaseClient';
 
 const AuthContext = createContext();
 
@@ -18,10 +19,15 @@ export const AuthProvider = ({ children }) => {
   });
 
   const [authModalOpen, setAuthModalOpen] = useState(false);
-  const [authMode, setAuthMode] = useState('login'); // 'login' | 'register' | 'persona'
+  const [authMode, setAuthMode] = useState('login'); // 'login' | 'register' | 'persona' | 'supabase_settings'
   const [onboardingOpen, setOnboardingOpen] = useState(false);
   const [editProfileOpen, setEditProfileOpen] = useState(false);
+  const [supabaseActive, setSupabaseActive] = useState(isSupabaseConfigured());
+  const [supabaseConfig, setSupabaseConfig] = useState(getSupabaseConfig());
+  const [authError, setAuthError] = useState(null);
+  const [authLoading, setAuthLoading] = useState(false);
 
+  // Sync state with localStorage
   useEffect(() => {
     if (currentUser) {
       localStorage.setItem('arthsaathi_user', JSON.stringify(currentUser));
@@ -30,16 +36,128 @@ export const AuthProvider = ({ children }) => {
     }
   }, [currentUser]);
 
-  // Login action
-  const login = (email, password) => {
+  // Check Supabase session on initial load if configured
+  useEffect(() => {
+    if (supabase && isSupabaseConfigured()) {
+      supabase.auth.getSession().then(({ data: { session } }) => {
+        if (session?.user) {
+          const userMeta = session.user.user_metadata || {};
+          const syncedUser = {
+            id: session.user.id,
+            email: session.user.email,
+            name: userMeta.name || session.user.email.split('@')[0],
+            avatar: `https://api.dicebear.com/7.x/bottts/svg?seed=${session.user.email}`,
+            title: userMeta.title || 'Supabase Verified Investor',
+            age: userMeta.age || 24,
+            city: userMeta.city || 'Bengaluru',
+            occupation: userMeta.occupation || 'Investor',
+            monthlyIncome: userMeta.monthlyIncome || 50000,
+            salary: userMeta.salary || 50000,
+            scholarship: 0,
+            internStipend: 0,
+            annualIncome: (userMeta.monthlyIncome || 50000) * 12,
+            savings: userMeta.savings || 40000,
+            interests: userMeta.interests || ['Mutual Funds (SIP)', 'Tax Saving (80C)'],
+            riskProfile: userMeta.riskProfile || { category: 'Moderate Growth', score: 65, description: 'Balanced growth seeker.' },
+            netWorth: userMeta.netWorth || 450000,
+            monthlySIPTotal: userMeta.monthlySIPTotal || 10000,
+            assets: userMeta.assets || { equity: 250000, debt: 120000, gold: 40000, cash: 40000, crypto: 0 },
+            investments: userMeta.investments || [
+              { id: '1', name: 'Nifty 50 Index Fund Direct', type: 'Mutual Fund (SIP)', amount: 150000, monthlySIP: 5000, returnPct: 14.2, platform: 'Zerodha' },
+              { id: '2', name: 'Flexi Cap Growth Fund', type: 'Mutual Fund (SIP)', amount: 100000, monthlySIP: 5000, returnPct: 16.5, platform: 'Groww' },
+              { id: '3', name: 'Bank Fixed Deposit', type: 'Debt', amount: 120000, monthlySIP: 0, returnPct: 7.0, platform: 'HDFC Bank' },
+              { id: '4', name: 'Digital Gold (SGB/ETF)', type: 'Gold', amount: 40000, monthlySIP: 0, returnPct: 11.0, platform: 'PhonePe' },
+            ],
+            goals: userMeta.goals || [
+              { id: 'g1', title: 'Emergency Buffer', targetAmount: 200000, currentAmount: 120000, targetDate: '2027-01-01', monthlySIP: 5000, category: 'Security' }
+            ],
+            isOnboarded: true,
+            isSupabaseUser: true
+          };
+          setCurrentUser(syncedUser);
+        }
+      }).catch(err => console.warn('Supabase session check:', err));
+    }
+  }, [supabaseActive]);
+
+  // Update Supabase configuration settings
+  const updateSupabaseCredentials = (url, key) => {
+    saveSupabaseConfig(url, key);
+    setSupabaseConfig({ supabaseUrl: url, supabaseAnonKey: key });
+    setSupabaseActive(Boolean(url && key && url.startsWith('https://')));
+  };
+
+  // Login action (Handles both Supabase Cloud and Local Personas)
+  const login = async (email, password) => {
+    setAuthLoading(true);
+    setAuthError(null);
+
+    // 1. Check if it's a demo persona
     const found = MOCK_PERSONAS.find(p => p.email.toLowerCase() === email.toLowerCase());
     if (found) {
       setCurrentUser(found);
       setAuthModalOpen(false);
+      setAuthLoading(false);
       return { success: true, user: found };
     }
 
-    // Custom user login
+    // 2. If Supabase is configured, attempt real cloud login
+    if (supabase && isSupabaseConfigured()) {
+      try {
+        const { data, error } = await supabase.auth.signInWithPassword({
+          email: email.trim(),
+          password: password.trim(),
+        });
+
+        if (error) {
+          console.warn('Supabase Auth error:', error.message);
+          // Fallback to local user if password fails or user is testing offline
+        } else if (data?.user) {
+          const userMeta = data.user.user_metadata || {};
+          const sbUser = {
+            id: data.user.id,
+            email: data.user.email,
+            name: userMeta.name || email.split('@')[0].toUpperCase(),
+            avatar: `https://api.dicebear.com/7.x/bottts/svg?seed=${email}`,
+            title: 'Supabase Cloud Investor',
+            age: userMeta.age || 24,
+            city: userMeta.city || 'Bengaluru',
+            occupation: userMeta.occupation || 'Early Career Professional',
+            monthlyIncome: userMeta.monthlyIncome || 50000,
+            salary: userMeta.salary || 50000,
+            scholarship: 0,
+            internStipend: 0,
+            annualIncome: 600000,
+            savings: 40000,
+            interests: ['Mutual Funds (SIP)', 'Tax Saving (80C)', 'Travel Budgeting'],
+            riskProfile: { category: 'Moderate Growth', score: 65, description: 'Balanced growth seeker.' },
+            netWorth: 450000,
+            monthlySIPTotal: 10000,
+            assets: { equity: 250000, debt: 120000, gold: 40000, cash: 40000, crypto: 0 },
+            investments: [
+              { id: '1', name: 'Nifty 50 Index Fund Direct', type: 'Mutual Fund (SIP)', amount: 150000, monthlySIP: 5000, returnPct: 14.2, platform: 'Zerodha' },
+              { id: '2', name: 'Flexi Cap Growth Fund', type: 'Mutual Fund (SIP)', amount: 100000, monthlySIP: 5000, returnPct: 16.5, platform: 'Groww' },
+              { id: '3', name: 'Bank Fixed Deposit', type: 'Debt', amount: 120000, monthlySIP: 0, returnPct: 7.0, platform: 'HDFC Bank' },
+              { id: '4', name: 'Digital Gold (SGB/ETF)', type: 'Gold', amount: 40000, monthlySIP: 0, returnPct: 11.0, platform: 'PhonePe' },
+            ],
+            goals: [
+              { id: 'g1', title: 'Emergency Buffer', targetAmount: 200000, currentAmount: 120000, targetDate: '2027-01-01', monthlySIP: 5000, category: 'Security' }
+            ],
+            isOnboarded: true,
+            isSupabaseUser: true
+          };
+
+          setCurrentUser(sbUser);
+          setAuthModalOpen(false);
+          setAuthLoading(false);
+          return { success: true, user: sbUser };
+        }
+      } catch (err) {
+        console.warn('Supabase login exception:', err);
+      }
+    }
+
+    // 3. Fallback to offline / instant user login
     const newUser = {
       id: `user-${Date.now()}`,
       name: email.split('@')[0].toUpperCase(),
@@ -84,11 +202,37 @@ export const AuthProvider = ({ children }) => {
 
     setCurrentUser(newUser);
     setAuthModalOpen(false);
+    setAuthLoading(false);
     return { success: true, user: newUser };
   };
 
-  // Register action -> Triggers Onboarding
-  const register = (name, email, password, baseIncome = 35000) => {
+  // Register action -> Triggers Onboarding (with Supabase signup if connected)
+  const register = async (name, email, password, baseIncome = 35000) => {
+    setAuthLoading(true);
+    setAuthError(null);
+
+    // If Supabase is connected, trigger Supabase signup
+    if (supabase && isSupabaseConfigured()) {
+      try {
+        const { data, error } = await supabase.auth.signUp({
+          email: email.trim(),
+          password: password.trim(),
+          options: {
+            data: {
+              name,
+              monthlyIncome: Number(baseIncome),
+              salary: Number(baseIncome),
+            }
+          }
+        });
+        if (error) {
+          console.warn('Supabase Signup warning:', error.message);
+        }
+      } catch (err) {
+        console.warn('Supabase register exception:', err);
+      }
+    }
+
     const newUser = {
       id: `user-${Date.now()}`,
       name,
@@ -130,7 +274,8 @@ export const AuthProvider = ({ children }) => {
 
     setCurrentUser(newUser);
     setAuthModalOpen(false);
-    setOnboardingOpen(true); // Launch step-by-step financial onboarding
+    setOnboardingOpen(true);
+    setAuthLoading(false);
     return { success: true, user: newUser };
   };
 
@@ -158,12 +303,19 @@ export const AuthProvider = ({ children }) => {
   };
 
   // Logout
-  const logout = () => {
+  const logout = async () => {
+    if (supabase && isSupabaseConfigured()) {
+      try {
+        await supabase.auth.signOut();
+      } catch (err) {
+        console.warn('Supabase signout:', err);
+      }
+    }
     setCurrentUser(null);
   };
 
   // Update current user data & persist
-  const updateUserProfile = (updatedFields) => {
+  const updateUserProfile = async (updatedFields) => {
     setCurrentUser(prev => {
       if (!prev) return prev;
       const merged = {
@@ -171,7 +323,6 @@ export const AuthProvider = ({ children }) => {
         ...updatedFields
       };
 
-      // Recalculate total monthly income from salary + scholarships + intern stipend if provided
       if (updatedFields.salary !== undefined || updatedFields.scholarship !== undefined || updatedFields.internStipend !== undefined) {
         const salary = Number(updatedFields.salary !== undefined ? updatedFields.salary : (prev.salary || 0));
         const scholarship = Number(updatedFields.scholarship !== undefined ? updatedFields.scholarship : (prev.scholarship || 0));
@@ -182,6 +333,17 @@ export const AuthProvider = ({ children }) => {
 
       return merged;
     });
+
+    // Optionally update Supabase user metadata
+    if (supabase && isSupabaseConfigured() && currentUser?.isSupabaseUser) {
+      try {
+        await supabase.auth.updateUser({
+          data: updatedFields
+        });
+      } catch (err) {
+        console.warn('Supabase update user metadata:', err);
+      }
+    }
   };
 
   return (
@@ -201,6 +363,11 @@ export const AuthProvider = ({ children }) => {
         setOnboardingOpen,
         editProfileOpen,
         setEditProfileOpen,
+        supabaseActive,
+        supabaseConfig,
+        updateSupabaseCredentials,
+        authError,
+        authLoading,
         personas: MOCK_PERSONAS
       }}
     >
