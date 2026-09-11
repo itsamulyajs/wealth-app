@@ -1,7 +1,9 @@
 # 🪙 ArthSaathi | Intelligent Indian WealthTech & Financial Confidence Platform
 
 > **CodeFury 9.0 Hackathon Submission**  
-> *Category: WealthTech & Investment Solutions*
+> *Category: WealthTech & Investment Solutions*  
+> 🌐 **Live Deployed App:** [https://wealth-app-s9l2.vercel.app/](https://wealth-app-s9l2.vercel.app/)  
+> 📦 **GitHub Repository:** [https://github.com/itsamulyajs/wealth-app](https://github.com/itsamulyajs/wealth-app)
 
 ---
 
