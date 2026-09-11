@@ -4,7 +4,7 @@
 **Track:** Track 1 - WealthTech & Investment Solutions  
 **Project Name:** ArthSaathi 2.0 | Intelligent Indian WealthTech, Multi-Asset Risk Intelligence & Market Truth Validator  
 **Live Hosted Website:** [Insert your deployed Netlify/Vercel link here]  
-**GitHub Repository Link:** [Insert your GitHub repo link here]  
+**GitHub Repository Link:** https://github.com/itsamulyajs/wealth-app  
 **Demo Video Link:** [Insert your YouTube / Google Drive public recording link here]  
 
 ---
